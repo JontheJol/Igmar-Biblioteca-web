@@ -1,5 +1,23 @@
 import { create } from 'zustand';
 import type { NotificationData } from '../components/NotificationDialog';
+import type { Bibliotecario } from '../types';
+
+// Roles constants
+export const ROLES = {
+  ADMIN: 3,
+  SUPER_ADMIN: 4,
+} as const;
+
+export const ROLE_NAMES = {
+  3: 'Administrador',
+  4: 'Super Administrador',
+} as const;
+
+// Helper functions for role checking
+export const isAdmin = (roleId: number): boolean => roleId === ROLES.ADMIN;
+export const isSuperAdmin = (roleId: number): boolean => roleId === ROLES.SUPER_ADMIN;
+export const hasAdminAccess = (roleId: number): boolean => roleId === ROLES.ADMIN || roleId === ROLES.SUPER_ADMIN;
+export const hasSuperAdminAccess = (roleId: number): boolean => roleId === ROLES.SUPER_ADMIN;
 
 export interface User {
   id: number;
@@ -12,6 +30,8 @@ export interface AuthUser {
   id: number;
   name: string;
   email: string;
+  roleId: number; // 3 = Administrador, 4 = Super Administrador
+  roleName: string;
 }
 
 export interface RegisterData {
@@ -28,6 +48,10 @@ interface AppState {
   users: User[];
   loading: boolean;
   error: string | null;
+  // Bibliotecarios state
+  bibliotecarios: Bibliotecario[];
+  bibliotecarioLoading: boolean;
+  bibliotecarioError: string | null;
   // Auth state
   isAuthenticated: boolean;
   currentUser: AuthUser | null;
@@ -42,6 +66,12 @@ interface AppState {
   updateUser: (id: number, updates: Partial<User>) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  // Bibliotecario CRUD actions
+  addBibliotecario: (bibliotecario: Omit<Bibliotecario, 'id'>) => void;
+  removeBibliotecario: (id: number) => void;
+  updateBibliotecario: (id: number, updates: Partial<Bibliotecario>) => void;
+  setBibliotecarioLoading: (loading: boolean) => void;
+  setBibliotecarioError: (error: string | null) => void;
   // Auth actions
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
@@ -63,6 +93,19 @@ export const useAppStore = create<AppState>((set, get) => ({
   ],
   loading: false,
   error: null,
+  // Bibliotecarios state
+  bibliotecarios: [
+    { id: 1, nombre: 'Ana González', correo: 'ana.gonzalez@biblioteca.com', numeroTelefono: '+52 555 123 4567' },
+    { id: 2, nombre: 'Miguel Torres', correo: 'miguel.torres@biblioteca.com', numeroTelefono: '+52 555 234 5678' },
+    { id: 3, nombre: 'Carmen López', correo: 'carmen.lopez@biblioteca.com', numeroTelefono: '+52 555 345 6789' },
+    { id: 4, nombre: 'Roberto Martínez', correo: 'roberto.martinez@biblioteca.com', numeroTelefono: '+52 555 456 7890' },
+    { id: 5, nombre: 'Laura Hernández', correo: 'laura.hernandez@biblioteca.com', numeroTelefono: '+52 555 567 8901' },
+    { id: 6, nombre: 'Carlos Ruiz', correo: 'carlos.ruiz@biblioteca.com', numeroTelefono: '+52 555 678 9012' },
+    { id: 7, nombre: 'María José Pérez', correo: 'maria.perez@biblioteca.com', numeroTelefono: '+52 555 789 0123' },
+    { id: 8, nombre: 'Francisco Jiménez', correo: 'francisco.jimenez@biblioteca.com', numeroTelefono: '+52 555 890 1234' },
+  ],
+  bibliotecarioLoading: false,
+  bibliotecarioError: null,
   // Auth state
   isAuthenticated: false,
   currentUser: null,
@@ -112,6 +155,47 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   setLoading: (loading) => set({ loading }),
   setError: (error) => set({ error }),
+  // Bibliotecario CRUD actions
+  addBibliotecario: (bibliotecario) => {
+    set((state) => ({
+      bibliotecarios: [...state.bibliotecarios, { ...bibliotecario, id: Date.now() }],
+    }));
+    // Show success notification
+    get().showSuccessNotification(
+      'Bibliotecario agregado',
+      `El bibliotecario ${bibliotecario.nombre} ha sido agregado exitosamente`
+    );
+  },
+  removeBibliotecario: (id) => {
+    const bibliotecario = get().bibliotecarios.find(b => b.id === id);
+    set((state) => ({
+      bibliotecarios: state.bibliotecarios.filter((b) => b.id !== id),
+    }));
+    // Show success notification
+    if (bibliotecario) {
+      get().showSuccessNotification(
+        'Bibliotecario eliminado',
+        `El bibliotecario ${bibliotecario.nombre} ha sido eliminado exitosamente`
+      );
+    }
+  },
+  updateBibliotecario: (id, updates) => {
+    const bibliotecario = get().bibliotecarios.find(b => b.id === id);
+    set((state) => ({
+      bibliotecarios: state.bibliotecarios.map((b) =>
+        b.id === id ? { ...b, ...updates } : b
+      ),
+    }));
+    // Show success notification
+    if (bibliotecario) {
+      get().showSuccessNotification(
+        'Bibliotecario actualizado',
+        `El bibliotecario ${updates.nombre || bibliotecario.nombre} ha sido actualizado exitosamente`
+      );
+    }
+  },
+  setBibliotecarioLoading: (bibliotecarioLoading) => set({ bibliotecarioLoading }),
+  setBibliotecarioError: (bibliotecarioError) => set({ bibliotecarioError }),
   // Auth actions
   login: async (email: string, password: string) => {
     set({ authLoading: true, authError: null });
@@ -119,14 +203,24 @@ export const useAppStore = create<AppState>((set, get) => ({
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Simple demo authentication
+    // Demo authentication with different roles
+    let userRole: { roleId: number; roleName: string } | null = null;
+    
     if (email === 'admin@booksmart.com' && password === 'password') {
+      userRole = { roleId: ROLES.ADMIN, roleName: ROLE_NAMES[3] };
+    } else if (email === 'superadmin@booksmart.com' && password === 'password') {
+      userRole = { roleId: ROLES.SUPER_ADMIN, roleName: ROLE_NAMES[4] };
+    }
+    
+    if (userRole) {
       set({
         isAuthenticated: true,
         currentUser: {
           id: 1,
-          name: 'Administrador',
+          name: userRole.roleName,
           email: email,
+          roleId: userRole.roleId,
+          roleName: userRole.roleName,
         },
         authLoading: false,
         authError: null,
@@ -134,17 +228,21 @@ export const useAppStore = create<AppState>((set, get) => ({
       // Show success notification
       get().showSuccessNotification(
         'Inicio de sesión exitoso',
-        `¡Bienvenido de vuelta!`
+        `¡Bienvenido de vuelta, ${userRole.roleName}!`
       );
     } else {
       set({
         authLoading: false,
-        authError: 'Credenciales incorrectas. Intenta con admin@booksmart.com / password',
+        authError: 'Credenciales incorrectas. Usa admin@booksmart.com o superadmin@booksmart.com con password',
       });
       // Show error notification
       get().showErrorNotification(
         'Error de autenticación',
-        'Credenciales incorrectas. Intenta con admin@booksmart.com / password'
+        'Credenciales incorrectas',
+        { 
+          admin: 'admin@booksmart.com / password',
+          superadmin: 'superadmin@booksmart.com / password'
+        }
       );
     }
   },
@@ -212,12 +310,17 @@ export const useAppStore = create<AppState>((set, get) => ({
     // Find user by email and authenticate them
     const user = get().users.find(u => u.email === email);
     if (user) {
+      // Default role for registered users is Admin
+      const defaultRole = { roleId: ROLES.ADMIN, roleName: ROLE_NAMES[3] };
+      
       set({
         isAuthenticated: true,
         currentUser: {
           id: user.id,
           name: user.name,
           email: user.email,
+          roleId: defaultRole.roleId,
+          roleName: defaultRole.roleName,
         },
         authLoading: false,
         authError: null,
