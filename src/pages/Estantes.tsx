@@ -1,37 +1,85 @@
 import '@fontsource/league-spartan/400.css';
 import '@fontsource/league-spartan/700.css';
 import '@fontsource/rowdies/400.css';
-import { Box, Typography } from '@mui/material';
-import React from 'react';
+import { 
+  Box, 
+  Typography, 
+  FormControl, 
+  Select, 
+  MenuItem, 
+  Card
+} from '@mui/material';
+import type { SelectChangeEvent } from '@mui/material';
+import React, { useState } from 'react';
 import AddIcon from '../assets/addIcon';
-import EstanteList from '../components/EstanteList';
-import NavbarAdmin from '../components/navbarAdmin';
+import BookIcon from '../assets/bookIcon';
+import { Edit } from 'iconoir-react';
+
+// Datos de ejemplo - en una app real esto vendría del store/API
+const estantesData = [
+  { id: 1, nombre: 'Estante A', cantidadLibros: 32, espaciosDisponibles: 3 },
+  { id: 2, nombre: 'Estante B', cantidadLibros: 28, espaciosDisponibles: 7 },
+  { id: 3, nombre: 'Estante C', cantidadLibros: 30, espaciosDisponibles: 5 },
+  { id: 4, nombre: 'Estante D', cantidadLibros: 25, espaciosDisponibles: 10 },
+  { id: 5, nombre: 'Estante E', cantidadLibros: 35, espaciosDisponibles: 0 },
+  { id: 6, nombre: 'Estante F', cantidadLibros: 22, espaciosDisponibles: 13 },
+  { id: 7, nombre: 'Estante G', cantidadLibros: 29, espaciosDisponibles: 6 },
+  { id: 8, nombre: 'Estante H', cantidadLibros: 31, espaciosDisponibles: 4 },
+  { id: 9, nombre: 'Estante I', cantidadLibros: 27, espaciosDisponibles: 8 },
+  { id: 10, nombre: 'Estante J', cantidadLibros: 33, espaciosDisponibles: 2 },
+];
 
 const Estantes: React.FC = () => {
-  return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      <NavbarAdmin />
+  const [filtro, setFiltro] = useState('Todos');
 
+  const handleFiltroChange = (event: SelectChangeEvent) => {
+    setFiltro(event.target.value);
+  };
+
+  const estantesFiltrados = estantesData.filter(estante => {
+    if (filtro === 'Disponibles') return estante.espaciosDisponibles > 0;
+    if (filtro === 'Llenos') return estante.espaciosDisponibles === 0;
+    return true; // 'Todos'
+  });
+
+  const handleAddNewShelf = () => {
+    // Aquí implementarías la lógica para añadir un nuevo estante
+    console.log('Añadir nuevo estante');
+  };
+
+  const handleEditShelf = (id: number) => {
+    // Aquí implementarías la lógica para editar un estante
+    console.log('Editar estante', id);
+  };
+
+  const handleAddBooks = (id: number) => {
+    // Aquí implementarías la lógica para añadir libros a un estante
+    console.log('Añadir libros al estante', id);
+  };
+
+  return (
+    <Box sx={{ backgroundColor: '#fff9ec', position: 'relative' }}>
       <Box
         sx={{
-          flex: 1,
           padding: { xs: 3, sm: 4 },
-          backgroundColor: '#fff9ec',
           position: 'relative',
-          minHeight: '100vh',
           overflow: 'hidden'
         }}
       >
-        {/* Add Shelf Button */}
+        {/* Botón Añadir estante - Posición responsiva */}
         <Box
           sx={{
-            position: 'absolute',
-            right: '48px',
-            top: '74px',
+            position: { xs: 'static', md: 'absolute' },
+            right: { md: '48px' },
+            top: { md: '74px' },
             zIndex: 1,
+            mb: { xs: 2, md: 0 },
+            display: 'flex',
+            justifyContent: { xs: 'flex-end', md: 'flex-start' }
           }}
         >
           <Box
+            onClick={handleAddNewShelf}
             sx={{
               width: '100%',
               height: '100%',
@@ -75,33 +123,33 @@ const Estantes: React.FC = () => {
           </Box>
         </Box>
 
-        {/* Page Title */}
+        {/* Título */}
         <Typography
           variant="h1"
           sx={{
-            fontSize: '64px',
+            fontSize: { xs: '32px', sm: '48px', md: '64px' },
             fontWeight: 400,
             color: '#453726',
             fontFamily: 'Rowdies, sans-serif',
-            marginBottom: '35px',
-            width: '859px',
-            lineHeight: '20px',
+            marginBottom: { xs: '20px', md: '35px' },
+            width: { xs: '100%', md: '859px' },
+            lineHeight: { xs: '36px', sm: '52px', md: '20px' },
             letterSpacing: '0.1px'
           }}
         >
           Gestión de Estantes
         </Typography>
 
-        {/* Subtitle */}
+        {/* Subtítulo */}
         <Typography
           variant="subtitle1"
           sx={{
-            fontSize: '24px',
+            fontSize: { xs: '18px', sm: '20px', md: '24px' },
             color: '#4B453D',
             fontWeight: 400,
             fontFamily: 'League Spartan, sans-serif',
             marginBottom: '16px',
-            width: '743px',
+            width: { xs: '100%', md: '743px' },
             lineHeight: '20px',
             letterSpacing: '0.1px'
           }}
@@ -109,20 +157,306 @@ const Estantes: React.FC = () => {
           Administra los Estantes de la biblioteca en este espacio.
         </Typography>
 
-        {/* Divider Line */}
-        
+        {/* Línea divisoria */}
         <Box
           sx={{
-            width: '1144px',
+            width: { xs: '100%', md: '1144px' },
             height: 0,
             borderTop: '3px solid #3A332A',
             marginBottom: '14px'
           }}
         />
-        <EstanteList />
 
+      {/* Filtro */}
+      <FormControl sx={{ mb: 3, minWidth: { xs: '100%', sm: 306 }, maxWidth: { xs: '100%', sm: 306 } }}>
+        <Select
+          value={filtro}
+          onChange={handleFiltroChange}
+          sx={{
+            height: 48,
+            backgroundColor: '#fff9ec',
+            border: '1px solid rgba(69,55,38,0.15)',
+            borderRadius: '10px',
+            fontFamily: 'League Spartan',
+            fontSize: { xs: '16px', sm: '20px' },
+            fontWeight: 300,
+            color: '#453726',
+            '& .MuiOutlinedInput-notchedOutline': {
+              border: 'none',
+            },
+            '&:hover .MuiOutlinedInput-notchedOutline': {
+              border: 'none',
+            },
+            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+              border: 'none',
+            },
+          }}
+          displayEmpty
+        >
+          <MenuItem value="Todos">Filtrar por disponibilidad - Todos</MenuItem>
+          <MenuItem value="Disponibles">Disponibles</MenuItem>
+          <MenuItem value="Llenos">Llenos</MenuItem>
+        </Select>
+      </FormControl>
+
+      {/* Grid de Estantes */}
+      <Box
+        sx={{
+          backgroundColor: 'rgba(225,197,171,0.8)',
+          borderRadius: '10px',
+          padding: { xs: '15px 8px', sm: '21px 10px' },
+          maxWidth: { xs: '100%', sm: '100%', md: '1200px' },
+          width: '100%',
+          maxHeight: { xs: '1800px', sm: '950px', md: '516px' },
+          overflowY: 'auto',
+          display: 'grid',
+          gridTemplateColumns: { 
+            xs: '1fr', 
+            sm: 'repeat(2, 1fr)', 
+            md: 'repeat(3, 1fr)' 
+          },
+          gridAutoRows: { 
+            xs: 'minmax(280px, auto)', 
+            sm: 'minmax(300px, auto)', 
+            md: 'minmax(240px, auto)' 
+          },
+          gap: { xs: '15px', sm: '20px', md: '23px' },
+          '&::-webkit-scrollbar': {
+            width: '8px',
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: 'rgba(164, 113, 73, 0.1)',
+            borderRadius: '4px',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: 'rgba(164, 113, 73, 0.5)',
+            borderRadius: '4px',
+            '&:hover': {
+              backgroundColor: 'rgba(164, 113, 73, 0.7)',
+            },
+          },
+        }}
+      >
+                {estantesFiltrados.map((estante) => (
+          <Card
+            key={estante.id}
+            sx={{
+              backgroundColor: '#ffffff',
+              borderRadius: '20px',
+              padding: { xs: '12px', sm: '16px', md: '20px' },
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: { xs: '8px', sm: '10px' },
+              height: 'fit-content',
+              minHeight: { xs: '240px', sm: '260px', md: '280px' },
+              maxWidth: '280px',
+              margin: '0 auto',
+              boxSizing: 'border-box'
+            }}
+          >
+            {/* Avatar/Imagen del estante */}
+            <Box
+              sx={{
+                width: { xs: 48, sm: 56, md: 68 },
+                height: { xs: 48, sm: 56, md: 68 },
+                backgroundColor: '#f5eff7',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}
+            >
+              <BookIcon color="#999" width={32} height={32} />
+            </Box>
+
+            {/* Nombre del estante */}
+            <Typography
+              sx={{
+                fontFamily: 'League Spartan',
+                fontWeight: 500,
+                fontSize: { xs: '16px', sm: '18px', md: '20px' },
+                color: '#000000',
+                letterSpacing: '0.1px',
+                textAlign: 'center',
+                lineHeight: '20px',
+                margin: 0,
+                width: { xs: '140px', sm: '150px', md: '163.831px' },
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: '20.302px'
+              }}
+            >
+              {estante.nombre}
+            </Typography>
+
+            {/* Información del estante */}
+            <Box 
+              sx={{ 
+                width: '100%',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, minmax(0px, 1fr))',
+                gridTemplateRows: 'repeat(2, minmax(0px, 1fr))',
+                gap: '10px 0',
+                height: '68px'
+              }}
+            >
+              <Typography
+                sx={{
+                  gridArea: '1 / 1',
+                  fontFamily: 'League Spartan',
+                  fontWeight: 400,
+                  fontSize: { xs: '13px', sm: '14px', md: '15px' },
+                  color: '#000000',
+                  letterSpacing: '0.1px',
+                  lineHeight: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  height: '20.302px'
+                }}
+              >
+                Cantidad de Libros
+              </Typography>
+              <Typography
+                sx={{
+                  gridArea: '1 / 2',
+                  fontFamily: 'League Spartan',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  color: '#453726',
+                  letterSpacing: '0.1px',
+                  lineHeight: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  whiteSpace: 'pre'
+                }}
+              >
+                {estante.cantidadLibros}
+              </Typography>
+              <Typography
+                sx={{
+                  gridArea: '2 / 1',
+                  fontFamily: 'League Spartan',
+                  fontWeight: 400,
+                  fontSize: { xs: '13px', sm: '14px', md: '15px' },
+                  color: '#000000',
+                  letterSpacing: '0.1px',
+                  lineHeight: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  whiteSpace: 'pre'
+                }}
+              >
+                Espacios disponible
+              </Typography>
+              <Typography
+                sx={{
+                  gridArea: '2 / 2',
+                  fontFamily: 'League Spartan',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  color: '#453726',
+                  letterSpacing: '0.1px',
+                  lineHeight: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  whiteSpace: 'pre'
+                }}
+              >
+                {estante.espaciosDisponibles}
+              </Typography>
+            </Box>
+
+            {/* Botones de acción */}
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: 'row',
+              gap: '15px',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: { xs: '200px', sm: '220px', md: '228px' },
+              flexShrink: 0
+            }}>
+              <Box
+                onClick={() => handleEditShelf(estante.id)}
+                sx={{
+                  backgroundColor: '#a47149',
+                  color: '#ffffff',
+                  borderRadius: '8px',
+                  height: '30px',
+                  width: { xs: '80px', sm: '85px', md: '92.187px' },
+                  boxShadow: '0px 1px 2px 0px rgba(0,0,0,0.3), 0px 1px 3px 1px rgba(0,0,0,0.15)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  '&:hover': {
+                    backgroundColor: '#8b5e3c',
+                  }
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontFamily: 'League Spartan',
+                    fontWeight: 500,
+                    fontSize: { xs: '12px', sm: '13px', md: '15px' },
+                    letterSpacing: '0.1px',
+                    lineHeight: '20px',
+                    color: '#ffffff',
+                    marginRight: '4px'
+                  }}
+                >
+                  Editar
+                </Typography>
+                <Edit width={16} height={16} color="#ffffff" />
+              </Box>
+              <Box
+                onClick={() => handleAddBooks(estante.id)}
+                sx={{
+                  backgroundColor: '#2f5232',
+                  color: '#ffffff',
+                  borderRadius: '8px',
+                  height: '30px',
+                  width: { xs: '85px', sm: '90px', md: '100.021px' },
+                  boxShadow: '0px 1px 2px 0px rgba(0,0,0,0.3), 0px 1px 3px 1px rgba(0,0,0,0.15)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  '&:hover': {
+                    backgroundColor: '#234026',
+                  }
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontFamily: 'League Spartan',
+                    fontWeight: 500,
+                    fontSize: { xs: '12px', sm: '13px', md: '15px' },
+                    letterSpacing: '0.1px',
+                    lineHeight: '20px',
+                    color: '#ffffff',
+                    marginRight: '4px'
+                  }}
+                >
+                  Añadir
+                </Typography>
+                <BookIcon color="#ffffff" width={16} height={16} />
+              </Box>
+            </Box>
+          </Card>
+        ))}
       </Box>
-      
+      </Box>
     </Box>
   );
 };
