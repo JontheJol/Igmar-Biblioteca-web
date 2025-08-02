@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+#exclude files
+ACTIVIDADES_COMPLETADAS.md
+SISTEMA_ROLES.md

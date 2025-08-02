@@ -2,6 +2,8 @@
 
 Una aplicación completa de React con TypeScript que usa las siguientes tecnologias
 
+📚 **[Ver documentación completa en /docs](docs/README.md)**
+
 ## 🚀 Tecnologías Utilizadas
 
 - **React 18** - Biblioteca principal para construir interfaces de usuario
