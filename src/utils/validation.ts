@@ -179,6 +179,13 @@ export const configuracion2FASchema = yup.object({
     .matches(/^\d{6}$/, 'El código debe tener 6 dígitos'),
 });
 
+// Esquema para bibliotecarios
+export const bibliotecarioSchema = yup.object({
+  nombre: baseSchemas.nombreApellido,
+  correo: baseSchemas.correo,
+  numeroTelefono: baseSchemas.celular,
+});
+
 /**
  * Tipos TypeScript derivados de los esquemas
  */
@@ -189,6 +196,7 @@ export type LibroFormData = yup.InferType<typeof libroSchema>;
 export type PrestamoFormData = yup.InferType<typeof prestamoSchema>;
 export type CambioContrasenaFormData = yup.InferType<typeof cambioContrasenaSchema>;
 export type Configuracion2FAFormData = yup.InferType<typeof configuracion2FASchema>;
+export type BibliotecarioFormData = yup.InferType<typeof bibliotecarioSchema>;
 
 /**
  * Validadores síncronos para validación en tiempo real
