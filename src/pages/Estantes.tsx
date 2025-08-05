@@ -11,50 +11,37 @@ import {
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AddIcon from '../assets/addIcon';
 import BookIcon from '../assets/bookIcon';
 import { Edit } from 'iconoir-react';
-
-// Datos de ejemplo - en una app real esto vendría del store/API
-const estantesData = [
-  { id: 1, nombre: 'Estante A', cantidadLibros: 32, espaciosDisponibles: 3 },
-  { id: 2, nombre: 'Estante B', cantidadLibros: 28, espaciosDisponibles: 7 },
-  { id: 3, nombre: 'Estante C', cantidadLibros: 30, espaciosDisponibles: 5 },
-  { id: 4, nombre: 'Estante D', cantidadLibros: 25, espaciosDisponibles: 10 },
-  { id: 5, nombre: 'Estante E', cantidadLibros: 35, espaciosDisponibles: 0 },
-  { id: 6, nombre: 'Estante F', cantidadLibros: 22, espaciosDisponibles: 13 },
-  { id: 7, nombre: 'Estante G', cantidadLibros: 29, espaciosDisponibles: 6 },
-  { id: 8, nombre: 'Estante H', cantidadLibros: 31, espaciosDisponibles: 4 },
-  { id: 9, nombre: 'Estante I', cantidadLibros: 27, espaciosDisponibles: 8 },
-  { id: 10, nombre: 'Estante J', cantidadLibros: 33, espaciosDisponibles: 2 },
-];
+import { useAppStore } from '../store/appStore';
 
 const Estantes: React.FC = () => {
+  const navigate = useNavigate();
+  const { estantes } = useAppStore();
   const [filtro, setFiltro] = useState('Todos');
 
   const handleFiltroChange = (event: SelectChangeEvent) => {
     setFiltro(event.target.value);
   };
 
-  const estantesFiltrados = estantesData.filter(estante => {
+  const estantesFiltrados = estantes.filter(estante => {
     if (filtro === 'Disponibles') return estante.espaciosDisponibles > 0;
     if (filtro === 'Llenos') return estante.espaciosDisponibles === 0;
     return true; // 'Todos'
   });
 
   const handleAddNewShelf = () => {
-    // Aquí implementarías la lógica para añadir un nuevo estante
-    console.log('Añadir nuevo estante');
+    navigate('/agregar-estante');
   };
 
   const handleEditShelf = (id: number) => {
-    // Aquí implementarías la lógica para editar un estante
-    console.log('Editar estante', id);
+    navigate(`/editar-estante/${id}`);
   };
 
   const handleAddBooks = (id: number) => {
-    // Aquí implementarías la lógica para añadir libros a un estante
-    console.log('Añadir libros al estante', id);
+    navigate(`/libros/nuevo?estante=${id}`);
   };
 
   return (

@@ -46,17 +46,6 @@ const NuevoLibroISBN: React.FC = () => {
       // Simular validación de ISBN y llamada a API
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Simular datos obtenidos de la API
-      const bookDataFromAPI = {
-        isbn: data.isbn,
-        titulo: 'El Quijote de la Mancha',
-        autor: 'Miguel de Cervantes',
-        editorial: 'Editorial Planeta',
-        fechaPublicacion: '1605-01-16',
-        descripcion: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut magna nisi, vulputate vitae sapien vitae, laoreet pharetra justo. Duis fringilla non nisi eu viverra. Nullam in aliquam arcu. Donec sodales eu tellus ac finibus. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer placerat consectetur bibendum.',
-        imagen: 'placeholder'
-      };
-      
       // Navegar al formulario de libro con el ISBN
       navigate('/libros/nuevo/formulario', { 
         state: { isbn: data.isbn } 

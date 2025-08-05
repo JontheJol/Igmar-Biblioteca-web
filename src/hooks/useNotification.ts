@@ -13,8 +13,6 @@ interface UseNotificationReturn {
   showNotification: (notification: NotificationData) => void;
   showSuccessNotification: (title: string, message: string, buttonText?: string) => void;
   showErrorNotification: (title: string, message: string, details?: Record<string, string>) => void;
-  showWarningNotification: (title: string, message: string) => void;
-  showInfoNotification: (title: string, message: string) => void;
   handleApiResponse: (response: ApiResponse, successTitle?: string) => void;
   closeNotification: () => void;
 }
@@ -61,29 +59,6 @@ export const useNotification = (): UseNotificationReturn => {
     });
   }, [showNotification]);
 
-  const showWarningNotification = useCallback((
-    title: string,
-    message: string
-  ) => {
-    showNotification({
-      type: 'warning',
-      title,
-      message,
-      showCloseButton: true,
-    });
-  }, [showNotification]);
-
-  const showInfoNotification = useCallback((
-    title: string,
-    message: string
-  ) => {
-    showNotification({
-      type: 'info',
-      title,
-      message,
-    });
-  }, [showNotification]);
-
   // Handle API responses automatically
   const handleApiResponse = useCallback((
     response: ApiResponse,
@@ -97,9 +72,9 @@ export const useNotification = (): UseNotificationReturn => {
       return;
     }
 
-    // Conflict responses (business logic errors)
+    // Conflict responses (business logic errors) - Usar error en lugar de warning
     if (status.includes('Conflicto') || status.includes('conflict')) {
-      showWarningNotification('Conflicto', msg);
+      showErrorNotification('Conflicto', msg);
       return;
     }
 
@@ -112,7 +87,7 @@ export const useNotification = (): UseNotificationReturn => {
 
     // Generic errors
     showErrorNotification('Error', msg || 'Ha ocurrido un error inesperado');
-  }, [showSuccessNotification, showWarningNotification, showErrorNotification]);
+  }, [showSuccessNotification, showErrorNotification]);
 
   return {
     notification,
@@ -120,8 +95,6 @@ export const useNotification = (): UseNotificationReturn => {
     showNotification,
     showSuccessNotification,
     showErrorNotification,
-    showWarningNotification,
-    showInfoNotification,
     handleApiResponse,
     closeNotification,
   };

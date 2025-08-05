@@ -9,6 +9,8 @@ import RoleProtectedRoute from './components/RoleProtectedRoute';
 import AddUser from './pages/AddUser';
 import EditUser from './pages/EditUser';
 import Estantes from './pages/Estantes';
+import AgregarEstante from './pages/AgregarEstante';
+import EditarEstante from './pages/EditarEstante';
 import Libros from './pages/Libros';
 import HomeRouter from './pages/HomeRouter';
 import Login from './pages/Login';
@@ -164,6 +166,22 @@ function App() {
               
               <Route path="/estantes" element={
                   <Estantes />
+              } />
+              
+              <Route path="/agregar-estante" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute requiredRole={3}>
+                    <AgregarEstante />
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/editar-estante/:id" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute requiredRole={3}>
+                    <EditarEstante />
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
               } />
               
               <Route path="/libros" element={

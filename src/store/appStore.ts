@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { NotificationData } from '../components/NotificationDialog';
-import type { Bibliotecario, Libro } from '../types';
+import type { Bibliotecario, Libro, Estante } from '../types';
 
 // Roles constants
 export const ROLES = {
@@ -56,6 +56,10 @@ interface AppState {
   libros: Libro[];
   libroLoading: boolean;
   libroError: string | null;
+  // Estantes state
+  estantes: Estante[];
+  estanteLoading: boolean;
+  estanteError: string | null;
   // Auth state
   isAuthenticated: boolean;
   currentUser: AuthUser | null;
@@ -83,6 +87,13 @@ interface AppState {
   setLibroLoading: (loading: boolean) => void;
   setLibroError: (error: string | null) => void;
   getLibroById: (id: number) => Libro | undefined;
+  // Estante CRUD actions
+  addEstante: (estante: Omit<Estante, 'id'>) => void;
+  removeEstante: (id: number) => void;
+  updateEstante: (id: number, updates: Partial<Estante>) => void;
+  setEstanteLoading: (loading: boolean) => void;
+  setEstanteError: (error: string | null) => void;
+  getEstanteById: (id: number) => Estante | undefined;
   // Auth actions
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
@@ -202,6 +213,21 @@ export const useAppStore = create<AppState>((set, get) => ({
   ],
   libroLoading: false,
   libroError: null,
+  // Estantes state
+  estantes: [
+    { id: 1, nombre: 'A24', ubicacion: 'Sector A', fila: '2', columna: '4', cantidadLibros: 32, espaciosDisponibles: 3, etiquetas: ['Literatura', 'Clásicos'] },
+    { id: 2, nombre: 'B15', ubicacion: 'Sector B', fila: '1', columna: '5', cantidadLibros: 28, espaciosDisponibles: 7, etiquetas: ['Ficción'] },
+    { id: 3, nombre: 'C08', ubicacion: 'Sector C', fila: '0', columna: '8', cantidadLibros: 30, espaciosDisponibles: 5, etiquetas: ['Historia'] },
+    { id: 4, nombre: 'D12', ubicacion: 'Sector D', fila: '1', columna: '2', cantidadLibros: 25, espaciosDisponibles: 10, etiquetas: ['Literatura'] },
+    { id: 5, nombre: 'E05', ubicacion: 'Sector E', fila: '0', columna: '5', cantidadLibros: 35, espaciosDisponibles: 0, etiquetas: ['Ciencia'] },
+    { id: 6, nombre: 'F03', ubicacion: 'Sector F', fila: '0', columna: '3', cantidadLibros: 22, espaciosDisponibles: 13, etiquetas: ['Arte'] },
+    { id: 7, nombre: 'G11', ubicacion: 'Sector G', fila: '1', columna: '1', cantidadLibros: 29, espaciosDisponibles: 6, etiquetas: ['Filosofía'] },
+    { id: 8, nombre: 'H07', ubicacion: 'Sector H', fila: '0', columna: '7', cantidadLibros: 31, espaciosDisponibles: 4, etiquetas: ['Psicología'] },
+    { id: 9, nombre: 'I19', ubicacion: 'Sector I', fila: '1', columna: '9', cantidadLibros: 27, espaciosDisponibles: 8, etiquetas: ['Cocina', 'Lifestyle'] },
+    { id: 10, nombre: 'J26', ubicacion: 'Sector J', fila: '2', columna: '6', cantidadLibros: 33, espaciosDisponibles: 2, etiquetas: ['Biografías'] },
+  ],
+  estanteLoading: false,
+  estanteError: null,
   // Auth state
   isAuthenticated: false,
   currentUser: null,
@@ -335,6 +361,50 @@ export const useAppStore = create<AppState>((set, get) => ({
   setLibroError: (libroError) => set({ libroError }),
   getLibroById: (id) => {
     return get().libros.find(l => l.id === id);
+  },
+  // Estante CRUD actions
+  addEstante: (newEstante) => {
+    set(state => ({
+      estantes: [...state.estantes, { ...newEstante, id: Math.max(0, ...state.estantes.map(e => e.id)) + 1 }]
+    }));
+    // Show success notification
+    get().showSuccessNotification(
+      'Estante agregado',
+      `El estante ${newEstante.nombre || 'nuevo'} ha sido agregado exitosamente`
+    );
+  },
+  removeEstante: (id) => {
+    const estante = get().estantes.find(e => e.id === id);
+    set(state => ({
+      estantes: state.estantes.filter(estante => estante.id !== id)
+    }));
+    // Show success notification
+    if (estante) {
+      get().showSuccessNotification(
+        'Estante eliminado',
+        `El estante ${estante.nombre} ha sido eliminado exitosamente`
+      );
+    }
+  },
+  updateEstante: (id, updates) => {
+    const estante = get().estantes.find(e => e.id === id);
+    set(state => ({
+      estantes: state.estantes.map(estante => 
+        estante.id === id ? { ...estante, ...updates } : estante
+      )
+    }));
+    // Show success notification
+    if (estante) {
+      get().showSuccessNotification(
+        'Estante actualizado',
+        `El estante ${updates.nombre || estante.nombre} ha sido actualizado exitosamente`
+      );
+    }
+  },
+  setEstanteLoading: (estanteLoading) => set({ estanteLoading }),
+  setEstanteError: (estanteError) => set({ estanteError }),
+  getEstanteById: (id) => {
+    return get().estantes.find(e => e.id === id);
   },
   // Auth actions
   login: async (email: string, password: string) => {

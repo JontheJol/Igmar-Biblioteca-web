@@ -50,6 +50,18 @@ export interface LibroFormData {
   fechaPublicacion?: string;
 }
 
+export interface Estante {
+  id: number;
+  nombre: string;
+  ubicacion: string;
+  fila: string;
+  columna: string;
+  cantidadLibros: number;
+  espaciosDisponibles: number;
+  etiquetas?: string[];
+}
+
+
 export interface RouteParams {
   id?: string;
 }
