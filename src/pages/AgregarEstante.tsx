@@ -20,7 +20,7 @@ import type { EstanteFormData } from '../utils/validation';
 
 const AgregarEstante: React.FC = () => {
   const navigate = useNavigate();
-  const { addEstante, showSuccessNotification, showErrorNotification } = useAppStore();
+  const { addEstante } = useAppStore(); // Solo necesitamos addEstante
 
   const { control, handleSubmit, formState: { errors } } = useForm<EstanteFormData>({
     resolver: yupResolver(estanteSchema),
@@ -47,20 +47,12 @@ const AgregarEstante: React.FC = () => {
 
       addEstante(estanteData);
       
-      showSuccessNotification(
-        'Estante agregado exitosamente',
-        `El estante ${nombreGenerado} ha sido creado correctamente`,
-        'Aceptar'
-      );
-      
+      // El store ya muestra la notificación automáticamente
       navigate('/estantes');
     } catch (error) {
-      showErrorNotification(
-        'Error al agregar estante',
-        'No se pudo crear el estante. Por favor, intenta nuevamente.',
-        undefined,
-        'Aceptar'
-      );
+      // En caso de error, podrías manejar aquí si es necesario
+      console.error('Error al agregar estante:', error);
+      navigate('/estantes');
     }
   };
 

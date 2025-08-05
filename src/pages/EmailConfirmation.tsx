@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -14,23 +14,27 @@ import {
   ArrowBack,
 } from '@mui/icons-material';
 import { useAppStore } from '../store/appStore';
-import { useNotification } from '../hooks/useNotification';
 import NotificationDialog from '../components/NotificationDialog';
 
 const EmailConfirmation: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { authError, setAuthError, confirmEmail, authLoading } = useAppStore();
+  const { authError, setAuthError, confirmEmail, authLoading, notification, isAuthenticated, hideNotification } = useAppStore();
   const [verificationCode, setVerificationCode] = useState('');
-  const {
-    notification,
-    isNotificationOpen,
-    showSuccessNotification,
-    closeNotification,
-  } = useNotification();
 
   // Get email from navigation state or default message
   const userEmail = location.state?.email || 'tu correo electrónico';
+
+  // Auto-navigate when user becomes authenticated after email confirmation
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Add a small delay to show the success notification briefly
+      const timer = setTimeout(() => {
+        navigate('/');
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleVerifyCode = async () => {
     if (!verificationCode || verificationCode.length !== 6) {
@@ -40,23 +44,15 @@ const EmailConfirmation: React.FC = () => {
 
     try {
       await confirmEmail(userEmail);
-      // Show success notification
-      showSuccessNotification(
-        'Correo verificado',
-        'Ahora puedes iniciar sesión',
-        'Aceptar'
-      );
+      // El store ya maneja la notificación automáticamente
     } catch (error) {
       // Error handled by store
     }
   };
 
   const handleNotificationClose = () => {
-    closeNotification();
-    // Navigate to login after successful verification
-    if (notification?.type === 'success') {
-      navigate('/login');
-    }
+    hideNotification();
+    // Navigation is now handled automatically by useEffect when user is authenticated
   };
 
   const handleBackToLogin = () => {
@@ -285,7 +281,7 @@ const EmailConfirmation: React.FC = () => {
 
       {/* Notification Dialog */}
       <NotificationDialog
-        open={isNotificationOpen}
+        open={!!notification}
         notification={notification}
         onClose={handleNotificationClose}
       />

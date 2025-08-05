@@ -21,7 +21,7 @@ import type { EstanteFormData } from '../utils/validation';
 const EditarEstante: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { estantes, updateEstante, showSuccessNotification, showErrorNotification } = useAppStore();
+  const { estantes, updateEstante } = useAppStore(); // Solo necesitamos updateEstante
 
   // Buscar el estante a editar
   const estante = estantes.find(e => e.id === Number(id));
@@ -38,12 +38,8 @@ const EditarEstante: React.FC = () => {
   const onSubmit = async (values: EstanteFormData) => {
     try {
       if (!estante) {
-        showErrorNotification(
-          'Error',
-          'No se encontró el estante a editar.',
-          undefined,
-          'Aceptar'
-        );
+        console.error('No se encontró el estante a editar');
+        navigate('/estantes');
         return;
       }
 
@@ -59,20 +55,11 @@ const EditarEstante: React.FC = () => {
 
       updateEstante(estante.id, estanteData);
       
-      showSuccessNotification(
-        'Estante actualizado exitosamente',
-        `El estante ${nombreGenerado} ha sido actualizado correctamente`,
-        'Aceptar'
-      );
-      
+      // El store ya muestra la notificación automáticamente
       navigate('/estantes');
     } catch (error) {
-      showErrorNotification(
-        'Error al actualizar estante',
-        'No se pudo actualizar el estante. Por favor, intenta nuevamente.',
-        undefined,
-        'Aceptar'
-      );
+      console.error('Error al actualizar estante:', error);
+      navigate('/estantes');
     }
   };
 
@@ -84,16 +71,11 @@ const EditarEstante: React.FC = () => {
         setValue('fila', estante.fila || '');
         setValue('columna', estante.columna || '');
       } else if (id) {
-        // Si no se encuentra el estante, mostrar error y redirigir
-        showErrorNotification(
-          'Estante no encontrado',
-          'El estante que intentas editar no existe.',
-          undefined,
-          'Aceptar'
-        );
+        // Si no se encuentra el estante, redirigir
+        console.error('Estante no encontrado');
         navigate('/estantes');
       }
-    }, [estante, id, setValue, showErrorNotification, navigate]);
+    }, [estante, id, setValue, navigate]);
 
   const handleCancelar = () => {
     navigate('/estantes');

@@ -33,6 +33,15 @@ This is a React TypeScript CRUD application using:
 - **Navigation**: Forms automatically navigate back on successful submission
 - **Error handling**: Display store errors using MUI `Alert` components
 
+### Notification System
+- **Centralized Notifications**: All notifications are managed by Zustand store (`appStore.ts`)
+- **Automatic Notifications**: Store actions automatically show success/error notifications - DO NOT add manual notifications in components
+- **Notification Types**: Only 'success' and 'error' types are supported (no warning/info)
+- **Display Component**: Use `NotificationDialog` component to display notifications
+- **Store Methods**: Use `showSuccessNotification()` and `showErrorNotification()` in store actions
+- **Component Integration**: Import `notification` and `hideNotification` from store, pass to `NotificationDialog`
+- **Pattern**: `<NotificationDialog open={!!notification} notification={notification} onClose={hideNotification} />`
+
 ### Validation System (MANDATORY)
 - **Centralized Validation**: ALL form validation must use schemas from `src/utils/validation.ts`
 - **Available Schemas**: 
@@ -82,6 +91,7 @@ npm run preview  # Preview production build
 2. Pages import store actions and pass them to reusable components
 3. Components receive data and callbacks via props, not direct store access
 4. Form submissions trigger store updates and programmatic navigation
+5. Store actions automatically handle success/error notifications - no manual notification calls needed
 
 ### TypeScript Patterns
 - Store types are defined and exported from store file
@@ -102,4 +112,6 @@ When modifying this codebase:
 - Keep type definitions close to their usage context
 - **ALWAYS use existing validation schemas from `src/utils/validation.ts`**
 - **NEVER create new Yup schemas - the validation system is complete and centralized**
+- **NEVER add manual notification calls - store actions handle notifications automatically**
 - Import the appropriate schema and TypeScript type for any form implementation
+- Use `NotificationDialog` component for displaying notifications, not custom alert implementations
