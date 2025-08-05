@@ -82,6 +82,16 @@ export const baseSchemas = {
     .required('La columna es requerida')
     .matches(REGEX_PATTERNS.COLUMNA, REGEX_ERROR_MESSAGES.COLUMNA),
 
+  // Estante
+  estante: yup
+    .string()
+    .required('El estante es requerido'),
+
+  // Etiqueta
+  etiqueta: yup
+    .string()
+    .required('La etiqueta es requerida'),
+
   // Fecha
   fecha: yup
     .string()
@@ -145,9 +155,18 @@ export const libroSchema = yup.object({
   isbn: yup.string().required('El ISBN es requerido'),
   fechaPublicacion: baseSchemas.fecha,
   estado: baseSchemas.estadoLibros,
+  estante: baseSchemas.estante,
   fila: baseSchemas.fila,
   columna: baseSchemas.columna,
   ubicacion: baseSchemas.ubicacion.optional(),
+});
+
+// Esquema específico para posición de libro
+export const posicionLibroSchema = yup.object({
+  estante: baseSchemas.estante,
+  etiqueta: baseSchemas.etiqueta,
+  fila: baseSchemas.fila,
+  columna: baseSchemas.columna,
 });
 
 // Esquema para préstamo
@@ -193,6 +212,7 @@ export type RegistroUsuarioFormData = yup.InferType<typeof registroUsuarioSchema
 export type LoginFormData = yup.InferType<typeof loginSchema>;
 export type PerfilUsuarioFormData = yup.InferType<typeof perfilUsuarioSchema>;
 export type LibroFormData = yup.InferType<typeof libroSchema>;
+export type PosicionLibroFormData = yup.InferType<typeof posicionLibroSchema>;
 export type PrestamoFormData = yup.InferType<typeof prestamoSchema>;
 export type CambioContrasenaFormData = yup.InferType<typeof cambioContrasenaSchema>;
 export type Configuracion2FAFormData = yup.InferType<typeof configuracion2FASchema>;
@@ -269,6 +289,7 @@ export default {
   loginSchema,
   perfilUsuarioSchema,
   libroSchema,
+  posicionLibroSchema,
   prestamoSchema,
   cambioContrasenaSchema,
   configuracion2FASchema,

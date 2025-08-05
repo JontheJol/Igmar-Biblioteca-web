@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { NotificationData } from '../components/NotificationDialog';
-import type { Bibliotecario } from '../types';
+import type { Bibliotecario, Libro } from '../types';
 
 // Roles constants
 export const ROLES = {
@@ -52,6 +52,10 @@ interface AppState {
   bibliotecarios: Bibliotecario[];
   bibliotecarioLoading: boolean;
   bibliotecarioError: string | null;
+  // Libros state
+  libros: Libro[];
+  libroLoading: boolean;
+  libroError: string | null;
   // Auth state
   isAuthenticated: boolean;
   currentUser: AuthUser | null;
@@ -72,6 +76,13 @@ interface AppState {
   updateBibliotecario: (id: number, updates: Partial<Bibliotecario>) => void;
   setBibliotecarioLoading: (loading: boolean) => void;
   setBibliotecarioError: (error: string | null) => void;
+  // Libro CRUD actions
+  addLibro: (libro: Omit<Libro, 'id'>) => void;
+  removeLibro: (id: number) => void;
+  updateLibro: (id: number, updates: Partial<Libro>) => void;
+  setLibroLoading: (loading: boolean) => void;
+  setLibroError: (error: string | null) => void;
+  getLibroById: (id: number) => Libro | undefined;
   // Auth actions
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
@@ -106,6 +117,91 @@ export const useAppStore = create<AppState>((set, get) => ({
   ],
   bibliotecarioLoading: false,
   bibliotecarioError: null,
+  // Libros state
+  libros: [
+    { 
+      id: 1, 
+      titulo: 'El Quijote de la Mancha', 
+      autor: 'Miguel de Cervantes', 
+      editorial: 'Editorial Planeta', 
+      estante: 'A24',
+      isbn: '978-84-08-07282-4',
+      descripcion: 'Una obra maestra de la literatura universal que narra las aventuras de Alonso Quixano, un hidalgo que enloquece leyendo libros de caballerías y decide convertirse en caballero andante bajo el nombre de Don Quijote de la Mancha.'
+    },
+    { 
+      id: 2, 
+      titulo: 'Cien años de soledad', 
+      autor: 'Gabriel García Márquez', 
+      editorial: 'Editorial Sudamericana', 
+      estante: 'B15',
+      isbn: '978-950-07-2677-5',
+      descripcion: 'La historia multigeneracional de la familia Buendía en el pueblo ficticio de Macondo. Una obra cumbre del realismo mágico que explora temas de soledad, amor, poder y el destino cíclico de América Latina.'
+    },
+    { 
+      id: 3, 
+      titulo: 'La Odisea', 
+      autor: 'Homero', 
+      editorial: 'Editorial Gredos', 
+      estante: 'C08',
+      isbn: '978-84-249-1009-8'
+    },
+    { 
+      id: 4, 
+      titulo: 'Rayuela', 
+      autor: 'Julio Cortázar', 
+      editorial: 'Editorial Alfaguara', 
+      estante: 'D12',
+      isbn: '978-84-204-7680-3'
+    },
+    { 
+      id: 5, 
+      titulo: 'Pedro Páramo', 
+      autor: 'Juan Rulfo', 
+      editorial: 'Editorial RM', 
+      estante: 'E05',
+      isbn: '978-968-16-6963-7'
+    },
+    {
+      id: 6,
+      titulo: 'El Amor en los Tiempos del Cólera',
+      autor: 'Gabriel García Márquez',
+      editorial: 'Editorial Sudamericana',
+      estante: 'B16',
+      isbn: '978-950-07-2678-2'
+    },
+    {
+      id: 7,
+      titulo: 'La Casa de los Espíritus',
+      autor: 'Isabel Allende',
+      editorial: 'Editorial Plaza & Janés',
+      estante: 'F03'
+    },
+    {
+      id: 8,
+      titulo: 'Ficciones',
+      autor: 'Jorge Luis Borges',
+      editorial: 'Editorial Emecé',
+      estante: 'G11',
+      isbn: '978-950-04-0041-2'
+    },
+    {
+      id: 9,
+      titulo: 'El Túnel',
+      autor: 'Ernesto Sabato',
+      editorial: 'Editorial Seix Barral',
+      estante: 'H07'
+    },
+    {
+      id: 10,
+      titulo: 'Como Agua para Chocolate',
+      autor: 'Laura Esquivel',
+      editorial: 'Editorial Planeta',
+      estante: 'I19',
+      isbn: '978-84-08-00234-2'
+    }
+  ],
+  libroLoading: false,
+  libroError: null,
   // Auth state
   isAuthenticated: false,
   currentUser: null,
@@ -196,6 +292,50 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   setBibliotecarioLoading: (bibliotecarioLoading) => set({ bibliotecarioLoading }),
   setBibliotecarioError: (bibliotecarioError) => set({ bibliotecarioError }),
+  // Libro CRUD actions
+  addLibro: (libro) => {
+    set((state) => ({
+      libros: [...state.libros, { ...libro, id: Date.now() }],
+    }));
+    // Show success notification
+    get().showSuccessNotification(
+      'Libro agregado',
+      `El libro "${libro.titulo}" ha sido agregado exitosamente`
+    );
+  },
+  removeLibro: (id) => {
+    const libro = get().libros.find(l => l.id === id);
+    set((state) => ({
+      libros: state.libros.filter((l) => l.id !== id),
+    }));
+    // Show success notification
+    if (libro) {
+      get().showSuccessNotification(
+        'Libro eliminado',
+        `El libro "${libro.titulo}" ha sido eliminado exitosamente`
+      );
+    }
+  },
+  updateLibro: (id, updates) => {
+    const libro = get().libros.find(l => l.id === id);
+    set((state) => ({
+      libros: state.libros.map((l) =>
+        l.id === id ? { ...l, ...updates } : l
+      ),
+    }));
+    // Show success notification
+    if (libro) {
+      get().showSuccessNotification(
+        'Libro actualizado',
+        `El libro "${updates.titulo || libro.titulo}" ha sido actualizado exitosamente`
+      );
+    }
+  },
+  setLibroLoading: (libroLoading) => set({ libroLoading }),
+  setLibroError: (libroError) => set({ libroError }),
+  getLibroById: (id) => {
+    return get().libros.find(l => l.id === id);
+  },
   // Auth actions
   login: async (email: string, password: string) => {
     set({ authLoading: true, authError: null });

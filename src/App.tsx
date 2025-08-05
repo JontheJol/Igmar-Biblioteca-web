@@ -20,6 +20,9 @@ import AdminSettings from './pages/AdminSettings';
 import Bibliotecarios from './pages/Bibliotecarios';
 import AgregarBibliotecario from './pages/AgregarBibliotecario';
 import EditarBibliotecario from './pages/EditarBibliotecario';
+import NuevoLibroISBN from './pages/NuevoLibroISBN';
+import NuevoLibroFormulario from './pages/NuevoLibroFormulario';
+// import NuevoLibroPosicion from './pages/NuevoLibroPosicion';
 import { useAppStore } from './store/appStore';
 
 const theme = createTheme({
@@ -170,6 +173,29 @@ function App() {
                   </RoleProtectedRoute>
                 </ProtectedRoute>
               } />
+              
+              {/* Libro creation routes */}
+              <Route path="/libros/nuevo" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute requiredRole={3}>
+                    <NuevoLibroISBN />
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/libros/nuevo/formulario" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute requiredRole={3}>
+                    <NuevoLibroFormulario />
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+              {/* <Route path="/libros/nuevo/posicion" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute requiredRole={3}>
+                    <NuevoLibroPosicion />
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } /> */}
               
               {/* Bibliotecarios routes - Admin access required */}
               <Route path="/bibliotecarios" element={

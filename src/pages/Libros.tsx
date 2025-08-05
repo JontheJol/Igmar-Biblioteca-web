@@ -13,96 +13,15 @@ import {
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
 import React, { useState } from 'react';
-import AddIcon from '../assets/addIcon';
+import { useNavigate } from 'react-router-dom';
+import { useAppStore } from '../store/appStore';
 import BookIcon from '../assets/bookIcon';
 import { Edit, StatsDownSquare } from 'iconoir-react';
 import { Search as SearchIcon } from '@mui/icons-material';
 
-// Tipos para los libros
-interface Libro {
-  id: number;
-  titulo: string;
-  autor: string;
-  editorial: string;
-  estante: string;
-  imagen?: string;
-}
-
-// Datos de ejemplo - en una app real esto vendría del store/API
-const librosData: Libro[] = [
-  { 
-    id: 1, 
-    titulo: 'El Quijote de la Mancha', 
-    autor: 'Miguel de Cervantes', 
-    editorial: 'Editorial Planeta', 
-    estante: 'A24' 
-  },
-  { 
-    id: 2, 
-    titulo: 'Cien años de soledad', 
-    autor: 'Gabriel García Márquez', 
-    editorial: 'Editorial Sudamericana', 
-    estante: 'B15' 
-  },
-  { 
-    id: 3, 
-    titulo: 'La Odisea', 
-    autor: 'Homero', 
-    editorial: 'Editorial Gredos', 
-    estante: 'C08' 
-  },
-  { 
-    id: 4, 
-    titulo: 'Rayuela', 
-    autor: 'Julio Cortázar', 
-    editorial: 'Editorial Alfaguara', 
-    estante: 'D12' 
-  },
-  { 
-    id: 5, 
-    titulo: 'Pedro Páramo', 
-    autor: 'Juan Rulfo', 
-    editorial: 'Editorial RM', 
-    estante: 'E05' 
-  },
-  {
-    id: 6,
-    titulo: 'El Amor en los Tiempos del Cólera',
-    autor: 'Gabriel García Márquez',
-    editorial: 'Editorial Sudamericana',
-    estante: 'B16'
-  },
-  {
-    id: 7,
-    titulo: 'La Casa de los Espíritus',
-    autor: 'Isabel Allende',
-    editorial: 'Editorial Plaza & Janés',
-    estante: 'F03'
-  },
-  {
-    id: 8,
-    titulo: 'Ficciones',
-    autor: 'Jorge Luis Borges',
-    editorial: 'Editorial Emecé',
-    estante: 'G11'
-  },
-  {
-    id: 9,
-    titulo: 'El Túnel',
-    autor: 'Ernesto Sabato',
-    editorial: 'Editorial Seix Barral',
-    estante: 'H07'
-  },
-  {
-    id: 10,
-    titulo: 'Como Agua para Chocolate',
-    autor: 'Laura Esquivel',
-    editorial: 'Editorial Planeta',
-    estante: 'I19'
-  }
-];
-
 const Libros: React.FC = () => {
+  const navigate = useNavigate();
+  const { libros } = useAppStore();
   const [filtro, setFiltro] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('titulo');
 
@@ -110,7 +29,7 @@ const Libros: React.FC = () => {
     setFiltroTipo(event.target.value);
   };
 
-  const librosFiltrados = librosData.filter(libro => {
+  const librosFiltrados = libros.filter(libro => {
     if (!filtro.trim()) return true;
     
     const filtroLower = filtro.toLowerCase().trim();
@@ -124,26 +43,22 @@ const Libros: React.FC = () => {
         return libro.editorial.toLowerCase().includes(filtroLower);
       case 'estante':
         return libro.estante.toLowerCase().includes(filtroLower);
+      case 'isbn':
+        return libro.isbn ? libro.isbn.toLowerCase().includes(filtroLower) : false;
       default:
         return true;
     }
   });
 
-  const handleRegistrarLibro = () => {
-    // Aquí implementarías la lógica para registrar un nuevo libro
-    console.log('Registrar nuevo libro');
-  };
-
   const handleEditarLibro = (id: number) => {
-    // Aquí implementarías la lógica para editar un libro
-    console.log('Editar libro', id);
+    navigate(`/libros/editar/${id}`);
   };
 
   return (
     <Box sx={{ backgroundColor: '#fff9ec', position: 'relative' }}>
       <Box
         sx={{
-          padding: { xs: 3, sm: 4 },
+          padding: { xs: '24px', sm: '32px', md: '40px' },
           position: 'relative',
           overflow: 'hidden'
         }}
@@ -156,7 +71,7 @@ const Libros: React.FC = () => {
             fontWeight: 400,
             color: '#453726',
             fontFamily: 'Rowdies, sans-serif',
-            marginBottom: { xs: '20px', md: '35px' },
+            marginBottom: { xs: '30px', md: '45px' },
             width: { xs: '100%', md: '859px' },
             lineHeight: { xs: '36px', sm: '52px', md: '20px' },
             letterSpacing: '0.1px'
@@ -172,9 +87,9 @@ const Libros: React.FC = () => {
             flexDirection: { xs: 'column', md: 'row' },
             alignItems: { xs: 'stretch', md: 'flex-start' },
             justifyContent: { xs: 'flex-start', md: 'space-between' },
-            marginBottom: '16px',
+            marginBottom: { xs: '24px', md: '28px' },
             width: '100%',
-            gap: { xs: 2, md: 0 }
+            gap: { xs: 2, md: 3 }
           }}
         >
           {/* Subtítulo */}
@@ -188,62 +103,45 @@ const Libros: React.FC = () => {
               lineHeight: '20px',
               letterSpacing: '0.1px',
               flex: { md: 1 },
-              marginRight: { md: 3 },
               order: { xs: 1, md: 1 }
             }}
           >
-            Administra los libros de la biblioteca en este espacio.
+            Administra la ubicación de los libros de la biblioteca en este espacio.
           </Typography>
 
-          {/* Botón Registrar libro alineado con el subtítulo */}
+          {/* Botón Nuevo Libro */}
           <Box
-            onClick={handleRegistrarLibro}
+            onClick={() => navigate('/libros/nuevo')}
             sx={{
-              width: { xs: '100%', sm: 'auto', md: '146px' },
-              minWidth: { xs: '140px', sm: '146px' },
-              height: '30px',
-              background: '#2F5233',
-              boxShadow: '0px 1px 3px 1px rgba(0, 0, 0, 0.15)',
-              overflow: 'hidden',
-              borderRadius: 2,
-              justifyContent: 'center',
-              alignItems: 'center',
-              display: 'flex',
+              backgroundColor: '#2f5232',
+              color: '#fff9ec',
+              borderRadius: '8px',
+              height: { xs: '38px', md: '44px' },
+              minWidth: { xs: '140px', md: '160px' },
+              boxShadow: '0px 1px 2px 0px rgba(0,0,0,0.3), 0px 1px 3px 1px rgba(0,0,0,0.15)',
               cursor: 'pointer',
-              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
               order: { xs: 2, md: 2 },
-              alignSelf: { xs: 'stretch', sm: 'flex-start' },
               '&:hover': {
-                background: '#234026',
+                backgroundColor: '#254428',
               }
             }}
           >
-            <Box
+            <Typography
               sx={{
-                height: 32,
-                padding: '6px 12px',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: '6px',
+                fontFamily: 'League Spartan',
+                fontWeight: 500,
+                fontSize: { xs: '16px', md: '18px' },
+                letterSpacing: '0.1px',
+                lineHeight: '1',
                 whiteSpace: 'nowrap'
               }}
             >
-              <Typography
-                sx={{
-                  color: '#FFF9EC',
-                  fontSize: { xs: '14px', sm: '15px' },
-                  fontFamily: 'League Spartan',
-                  fontWeight: 500,
-                  lineHeight: '20px',
-                  letterSpacing: 0.1,
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                Registrar libro
-              </Typography>
-              <AddIcon />
-            </Box>
+              Nuevo Libro
+            </Typography>
           </Box>
         </Box>
 
@@ -253,7 +151,7 @@ const Libros: React.FC = () => {
             width: '100%',
             height: 0,
             borderTop: '3px solid #3A332A',
-            marginBottom: '14px'
+            marginBottom: { xs: '20px', md: '24px' }
           }}
         />
 
@@ -263,7 +161,7 @@ const Libros: React.FC = () => {
             display: 'flex',
             flexDirection: { xs: 'column', sm: 'row' },
             gap: { xs: 2, sm: 3 },
-            mb: 3,
+            mb: { xs: 4, md: 5 },
             width: '100%'
           }}
         >
@@ -350,6 +248,7 @@ const Libros: React.FC = () => {
               <MenuItem value="autor">Filtrar por autor</MenuItem>
               <MenuItem value="editorial">Filtrar por editorial</MenuItem>
               <MenuItem value="estante">Filtrar por estante</MenuItem>
+              <MenuItem value="isbn">Filtrar por ISBN</MenuItem>
             </Select>
           </FormControl>
         </Box>
@@ -359,14 +258,14 @@ const Libros: React.FC = () => {
           sx={{
             backgroundColor: 'rgba(225,197,171,0.8)',
             borderRadius: '10px',
-            padding: { xs: '15px 8px', sm: '21px 10px' },
+            padding: { xs: '20px 12px', sm: '24px 16px', md: '28px 20px' },
             width: '100%',
-            maxHeight: { xs: 'calc(100vh - 300px)', sm: '950px', md: '516px' },
-            minHeight: { xs: '400px', sm: '500px' },
+            maxHeight: { xs: 'calc(100vh - 400px)', sm: '950px', md: '600px' },
+            minHeight: { xs: '450px', sm: '550px' },
             overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
-            gap: { xs: '15px', sm: '20px', md: '23px' },
+            gap: { xs: '18px', sm: '22px', md: '26px' },
             '&::-webkit-scrollbar': {
               width: '8px',
             },
@@ -390,10 +289,11 @@ const Libros: React.FC = () => {
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                minHeight: '200px',
+                minHeight: '250px',
                 textAlign: 'center',
                 color: '#453726',
-                opacity: 0.7
+                opacity: 0.7,
+                padding: '32px'
               }}
             >
               <SearchIcon sx={{ fontSize: '48px', mb: 2, opacity: 0.5 }} />
@@ -415,7 +315,13 @@ const Libros: React.FC = () => {
                 }}
               >
                 {filtro.trim() 
-                  ? `No hay libros que coincidan con "${filtro}" en ${filtroTipo === 'titulo' ? 'título' : filtroTipo === 'autor' ? 'autor' : filtroTipo === 'editorial' ? 'editorial' : 'estante'}`
+                  ? `No hay libros que coincidan con "${filtro}" en ${
+                      filtroTipo === 'titulo' ? 'título' : 
+                      filtroTipo === 'autor' ? 'autor' : 
+                      filtroTipo === 'editorial' ? 'editorial' : 
+                      filtroTipo === 'estante' ? 'estante' :
+                      filtroTipo === 'isbn' ? 'ISBN' : 'campo seleccionado'
+                    }`
                   : 'No hay libros registrados'
                 }
               </Typography>
@@ -427,14 +333,14 @@ const Libros: React.FC = () => {
               sx={{
                 backgroundColor: '#fef7ff',
                 borderRadius: '10px',
-                padding: { xs: '12px', sm: '16px', md: '20px' },
+                padding: { xs: '16px', sm: '20px', md: '24px' },
                 display: 'flex',
                 flexDirection: { xs: 'column', sm: 'row' },
                 alignItems: { xs: 'flex-start', sm: 'center' },
                 width: '100%',
-                minHeight: { xs: '200px', sm: '120px', md: '143px' },
+                minHeight: { xs: '220px', sm: '140px', md: '160px' },
                 boxShadow: '0px 4px 4px 0px rgba(0, 0, 0, 0.25)',
-                gap: { xs: '12px', sm: '16px', md: '20px' },
+                gap: { xs: '16px', sm: '20px', md: '24px' },
                 position: 'relative',
                 overflow: 'hidden'
               }}
@@ -474,7 +380,7 @@ const Libros: React.FC = () => {
                   sx={{
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: { xs: '4px', sm: '2px' },
+                    gap: { xs: '6px', sm: '4px' },
                     flex: 1,
                     minWidth: 0, // Para permitir text overflow
                     width: { xs: '100%', sm: 'auto' }
@@ -517,6 +423,26 @@ const Libros: React.FC = () => {
                     {libro.autor}
                   </Typography>
 
+                  {/* ISBN */}
+                  {libro.isbn && (
+                    <Typography
+                      sx={{
+                        fontFamily: 'League Spartan',
+                        fontWeight: 400,
+                        fontSize: { xs: '12px', sm: '13px', md: '14px' },
+                        color: '#888888',
+                        letterSpacing: '0.1px',
+                        lineHeight: '1.2',
+                        margin: 0,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: { xs: 'normal', sm: 'nowrap' }
+                      }}
+                    >
+                      ISBN: {libro.isbn}
+                    </Typography>
+                  )}
+
                   {/* Editorial */}
                   <Typography
                     sx={{
@@ -543,9 +469,9 @@ const Libros: React.FC = () => {
                     flexDirection: { xs: 'row', sm: 'column' },
                     alignItems: { xs: 'center', sm: 'flex-end' },
                     justifyContent: { xs: 'space-between', sm: 'flex-start' },
-                    gap: { xs: '16px', sm: '8px' },
+                    gap: { xs: '20px', sm: '12px' },
                     width: { xs: '100%', sm: 'auto' },
-                    minWidth: { sm: '120px', md: '140px' }
+                    minWidth: { sm: '140px', md: '160px' }
                   }}
                 >
                   {/* Información del estante */}
