@@ -80,7 +80,8 @@ const Estantes: React.FC = () => {
             onClick={handleAddNewShelf}
           />
         }
-      >
+      />
+      
         {/* Controles de búsqueda y filtro */}
         <Box
           sx={{
@@ -184,7 +185,6 @@ const Estantes: React.FC = () => {
             </Select>
           </FormControl>
         </Box>
-      </PageHeader>
 
       {/* Grid de Estantes */}
       <Box
@@ -206,12 +206,13 @@ const Estantes: React.FC = () => {
             xl: '1000px'
           },
           margin: '0 auto',
+          marginBottom: { xs: '20px', sm: '24px', md: '28px', lg: '32px' },
           maxHeight: { 
-            xs: 'calc(100vh - 320px)', 
-            sm: 'calc(100vh - 300px)', 
-            md: 'calc(100vh - 280px)',
-            lg: 'calc(100vh - 260px)',
-            xl: '600px'
+            xs: '60vh', 
+            sm: '65vh', 
+            md: '60vh',
+            lg: '60vh',
+            xl: '60vh'
           },
           minHeight: { xs: '280px', sm: '350px', md: '400px' },
           overflowY: 'auto',

@@ -182,15 +182,42 @@ const Libros: React.FC = () => {
         <Box
           sx={{
             backgroundColor: 'rgba(225,197,171,0.8)',
-            borderRadius: '10px',
-            padding: { xs: '20px 12px', sm: '24px 16px', md: '28px 20px' },
+            borderRadius: { xs: '8px', sm: '10px' },
+            padding: { 
+              xs: '12px 8px', 
+              sm: '16px 12px', 
+              md: '20px 16px',
+              lg: '24px 20px'
+            },
             width: '100%',
-            maxHeight: { xs: 'calc(100vh - 400px)', sm: '950px', md: '600px' },
-            minHeight: { xs: '450px', sm: '550px' },
+            maxWidth: { 
+              xs: '100%', 
+              sm: '100%', 
+              md: '100%', 
+              lg: '900px',
+              xl: '1000px'
+            },
+            margin: '0 auto',
+            marginBottom: { xs: '20px', sm: '24px', md: '28px', lg: '32px' },
+            maxHeight: { 
+              xs: '60vh', 
+              sm: '65vh', 
+              md: '60vh',
+              lg: '60vh',
+              xl: '60vh'
+            },
+            minHeight: { xs: '280px', sm: '350px', md: '400px' },
             overflowY: 'auto',
+            overflowX: 'hidden', // Previene overflow horizontal
             display: 'flex',
             flexDirection: 'column',
-            gap: { xs: '18px', sm: '22px', md: '26px' },
+            gap: { 
+              xs: '12px', 
+              sm: '16px', 
+              md: '20px',
+              lg: '24px'
+            },
+            boxSizing: 'border-box',
             '&::-webkit-scrollbar': {
               width: '8px',
             },
@@ -256,9 +283,14 @@ const Libros: React.FC = () => {
             <Card
               key={libro.id}
               sx={{
-                backgroundColor: '#fef7ff',
-                borderRadius: '10px',
-                padding: { xs: '16px', sm: '20px', md: '24px' },
+                backgroundColor: '#ffffff',
+                borderRadius: { xs: '12px', sm: '16px', md: '18px' },
+                padding: { 
+                  xs: '12px', 
+                  sm: '16px', 
+                  md: '20px',
+                  lg: '22px'
+                },
                 display: 'flex',
                 flexDirection: { xs: 'column', sm: 'row' },
                 alignItems: { xs: 'flex-start', sm: 'center' },
@@ -267,7 +299,13 @@ const Libros: React.FC = () => {
                 boxShadow: '0px 4px 4px 0px rgba(0, 0, 0, 0.25)',
                 gap: { xs: '16px', sm: '20px', md: '24px' },
                 position: 'relative',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                boxSizing: 'border-box',
+                transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+                }
               }}
             >
               {/* Imagen del libro */}
@@ -275,8 +313,8 @@ const Libros: React.FC = () => {
                 sx={{
                   width: { xs: '60px', sm: '64px', md: '80px' },
                   height: { xs: '60px', sm: '64px', md: '80px' },
-                  backgroundColor: '#ece6f0',
-                  borderRadius: '8px',
+                  backgroundColor: '#f5eff7',
+                  borderRadius: { xs: '6px', sm: '7px', md: '8px' },
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -443,7 +481,7 @@ const Libros: React.FC = () => {
                     sx={{
                       backgroundColor: '#a47149',
                       color: '#ffffff',
-                      borderRadius: '8px',
+                      borderRadius: { xs: '6px', sm: '7px', md: '8px' },
                       height: { xs: '32px', sm: '32px', md: '32px' },
                       width: { xs: 'auto', sm: 'auto' },
                       minWidth: { xs: '80px', sm: '85px', md: '92px' },
@@ -456,6 +494,7 @@ const Libros: React.FC = () => {
                       gap: '4px',
                       flexShrink: 0,
                       padding: '0 8px',
+                      transition: 'background-color 0.2s ease-in-out',
                       '&:hover': {
                         backgroundColor: '#8b5e3c',
                       }

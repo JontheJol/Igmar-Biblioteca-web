@@ -7,10 +7,14 @@ import {
   MenuItem,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import NavbarAdmin from '../components/navbarAdmin';
+import PageHeader from '../components/PageHeader';
+import ActionButton from '../components/ActionButton';
+import AddIcon from '../assets/addIcon';
 
 const AdminHome: React.FC = () => {
+  const navigate = useNavigate();
   const [reportFilter, setReportFilter] = React.useState('Día');
 
   const handleFilterChange = (event: SelectChangeEvent) => {
@@ -41,94 +45,105 @@ const AdminHome: React.FC = () => {
       <Box
         sx={{
           flex: 1, // Take all remaining space
-          p: { xs: 2, sm: 3, md: 4 },
-          pt: { xs: 10, md: 4 }, // Extra top padding on mobile for hamburger button
+          display: 'flex',
+          flexDirection: 'column',
           minHeight: '100vh',
           position: 'relative',
           overflow: 'hidden', // Prevent horizontal scroll
         }}
       >
-        {/* Welcome Section */}
-        <Box sx={{ mb: 4 }}>
-          <Typography
-            variant="h1"
-            sx={{
-              fontFamily: 'Rowdies, sans-serif',
-              fontSize: { xs: '48px', sm: '64px' },
-              fontWeight: 'normal',
-              color: '#453726',
-              letterSpacing: '0.1px',
-              lineHeight: 1.2,
-              mb: 2,
-            }}
-          >
-            Bienvenido
-          </Typography>
-          
-          {/* Divider line */}
+        <PageHeader
+          title="Bienvenido"
+          subtitle="Panel de administración"
+          actionButton={
+            <ActionButton
+              label="Registrar libro"
+              icon={<AddIcon />}
+              onClick={() => navigate('/libros/nuevo')}
+            />
+          }
+        >
+          {/* Filter Section */}
           <Box
             sx={{
-              height: '3px',
-              bgcolor: '#453726',
-              mb: 4,
-              maxWidth: '800px',
-            }}
-          />
-        </Box>
-
-        {/* Filter Section */}
-        <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Typography
-            sx={{
-              fontFamily: 'League Spartan, sans-serif',
-              fontSize: '24px',
-              color: '#453726',
-              fontWeight: 'normal',
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: { xs: 2, sm: 3 },
+              alignItems: { xs: 'stretch', sm: 'center' },
+              marginBottom: { xs: 2, sm: 3 },
+              width: '100%'
             }}
           >
-            Filtrar reporte por
-          </Typography>
-          
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <Select
-              value={reportFilter}
-              onChange={handleFilterChange}
+            <Typography
               sx={{
-                bgcolor: '#ffffff',
-                borderRadius: '10px',
-                height: '35px',
-                fontSize: '20px',
                 fontFamily: 'League Spartan, sans-serif',
-                fontWeight: 300,
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'rgba(69, 55, 38, 0.15)',
-                },
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'rgba(69, 55, 38, 0.25)',
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#453726',
-                },
+                fontSize: { xs: '18px', sm: '20px', md: '24px' },
+                color: '#453726',
+                fontWeight: 'normal',
               }}
             >
-              <MenuItem value="Día">Día</MenuItem>
-              <MenuItem value="Semana">Semana</MenuItem>
-              <MenuItem value="Mes">Mes</MenuItem>
-              <MenuItem value="Año">Año</MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
+              Filtrar reporte por
+            </Typography>
+            
+            <FormControl sx={{ 
+              width: '100%',
+              maxWidth: { xs: '100%', sm: '200px' },
+              boxSizing: 'border-box'
+            }}>
+              <Select
+                value={reportFilter}
+                onChange={handleFilterChange}
+                sx={{
+                  height: 48,
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid rgba(69,55,38,0.15)',
+                  borderRadius: '10px',
+                  fontSize: { xs: '16px', sm: '18px', md: '20px' },
+                  fontFamily: 'League Spartan, sans-serif',
+                  fontWeight: 300,
+                  color: '#453726',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    border: 'none',
+                  },
+                  '&:hover': {
+                    backgroundColor: '#FFFFFF',
+                    borderColor: 'rgba(69,55,38,0.25)',
+                  },
+                  '&.Mui-focused': {
+                    backgroundColor: '#FFFFFF',
+                    borderColor: 'rgba(69,55,38,0.35)',
+                  },
+                }}
+              >
+                <MenuItem value="Día">Día</MenuItem>
+                <MenuItem value="Semana">Semana</MenuItem>
+                <MenuItem value="Mes">Mes</MenuItem>
+                <MenuItem value="Año">Año</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+          </PageHeader>
 
-        {/* Statistics Card */}
+        {/* Content Container */}
         <Box
           sx={{
-            bgcolor: '#e1c5ab',
-            borderRadius: '10px',
-            p: 3,
-            maxWidth: '900px',
+            flex: 1,
+            p: { xs: 2, sm: 3, md: 4 },
+            pt: { xs: 1, md: 2 }, // Reduced top padding since PageHeader has its own
             position: 'relative',
+            overflow: 'hidden',
           }}
         >
+          {/* Statistics Card */}
+          <Box
+            sx={{
+              bgcolor: '#e1c5ab',
+              borderRadius: '10px',
+              p: 3,
+              maxWidth: '900px',
+              position: 'relative',
+            }}
+          >
           {/* Chart Area */}
           <Box
             sx={{
@@ -287,48 +302,6 @@ const AdminHome: React.FC = () => {
             </Box>
           </Box>
         </Box>
-
-        {/* Register Book Button */}
-        <Box
-          sx={{
-            position: 'fixed',
-            top: { xs: '80px', sm: '100px', md: '140px' },
-            right: { xs: '16px', sm: '24px', md: '40px' },
-            bgcolor: '#453726',
-            color: '#ffffff',
-            borderRadius: '8px',
-            p: { xs: 1.5, sm: 2 },
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            cursor: 'pointer',
-            boxShadow: '0 4px 12px rgba(69, 55, 38, 0.3)',
-            zIndex: 999,
-            minWidth: { xs: 'auto', sm: '160px' },
-            '&:hover': {
-              bgcolor: '#3a332a',
-              transform: 'translateY(-2px)',
-              boxShadow: '0 6px 16px rgba(69, 55, 38, 0.4)',
-            },
-            '&:active': {
-              transform: 'translateY(0px)',
-            },
-            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-          }}
-        >
-          <AddIcon sx={{ 
-            fontSize: { xs: '20px', sm: '22px' } 
-          }} />
-          <Typography
-            sx={{
-              fontSize: { xs: '14px', sm: '15px' },
-              fontWeight: 500,
-              fontFamily: 'League Spartan, sans-serif',
-              display: { xs: 'none', sm: 'block' }, // Hide text on very small screens
-            }}
-          >
-            Registrar libro
-          </Typography>
         </Box>
       </Box>
     </Box>
