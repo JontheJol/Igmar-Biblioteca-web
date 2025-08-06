@@ -149,6 +149,7 @@ export const SELECT_OPTIONS = {
   GENEROS: ['Masculino', 'Femenino'] as const,
   ESTADOS_LIBROS: ['Disponible', 'No disponible', 'Prestado'] as const,
   ESTADOS_PRESTAMOS: ['Activo', 'Entregado', 'Atrasado', 'Perdido'] as const,
+  ESTADOS_BIBLIOTECARIOS: ['Activo', 'Inactivo'] as const,
   COLUMNAS: Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i)), // A-Z
 } as const;
 

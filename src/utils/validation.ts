@@ -109,6 +109,12 @@ export const baseSchemas = {
     .string()
     .required('La ubicación es requerida')
     .matches(REGEX_PATTERNS.UBICACION, REGEX_ERROR_MESSAGES.UBICACION),
+
+  // Estado de bibliotecarios
+  estadoBibliotecario: yup
+    .string()
+    .required('El estado es requerido')
+    .oneOf([...SELECT_OPTIONS.ESTADOS_BIBLIOTECARIOS], 'El estado debe ser Activo o Inactivo'),
 };
 
 /**
@@ -192,10 +198,7 @@ export const cambioContrasenaSchema = yup.object({
 // Esquema para configuración 2FA
 export const configuracion2FASchema = yup.object({
   claveSecreta: baseSchemas.twoFA,
-  codigoVerificacion: yup
-    .string()
-    .required('El código de verificación es requerido')
-    .matches(/^\d{6}$/, 'El código debe tener 6 dígitos'),
+  codigoVerificacion: baseSchemas.twoFA,
 });
 
 // Esquema para estante
@@ -205,11 +208,33 @@ export const estanteSchema = yup.object({
   columna: baseSchemas.columna,
 });
 
-// Esquema para bibliotecarios
+// Esquema para bibliotecarios (edición básica)
 export const bibliotecarioSchema = yup.object({
   nombre: baseSchemas.nombreApellido,
   correo: baseSchemas.correo,
   numeroTelefono: baseSchemas.celular,
+});
+
+// Esquema para editar bibliotecarios (completo)
+export const editarBibliotecarioSchema = yup.object({
+  firstName: baseSchemas.nombreApellido,
+  lastName: baseSchemas.nombreApellido,
+  phone: baseSchemas.celular,
+  curp: baseSchemas.curp,
+  rfc: baseSchemas.rfc,
+  email: baseSchemas.correo,
+  estado: baseSchemas.estadoBibliotecario,
+});
+
+// Esquema para registro de bibliotecarios (completo)
+export const registroBibliotecarioSchema = yup.object({
+  firstName: baseSchemas.nombreApellido,
+  lastName: baseSchemas.nombreApellido,
+  email: baseSchemas.correo,
+  phone: baseSchemas.celular,
+  curp: baseSchemas.curp,
+  rfc: baseSchemas.rfc,
+  password: baseSchemas.contrasena,
 });
 
 /**
@@ -224,6 +249,8 @@ export type PrestamoFormData = yup.InferType<typeof prestamoSchema>;
 export type CambioContrasenaFormData = yup.InferType<typeof cambioContrasenaSchema>;
 export type Configuracion2FAFormData = yup.InferType<typeof configuracion2FASchema>;
 export type BibliotecarioFormData = yup.InferType<typeof bibliotecarioSchema>;
+export type EditarBibliotecarioFormData = yup.InferType<typeof editarBibliotecarioSchema>;
+export type RegistroBibliotecarioFormData = yup.InferType<typeof registroBibliotecarioSchema>;
 export type EstanteFormData = yup.InferType<typeof estanteSchema>;
 
 /**
@@ -284,6 +311,16 @@ export const syncValidators = {
   validateContrasena: (value: string): string | null => {
     try {
       baseSchemas.contrasena.validateSync(value);
+      return null;
+    } catch (error) {
+      return (error as yup.ValidationError).message;
+    }
+  },
+
+  // Validación de 2FA mientras escribe
+  validateTwoFA: (value: string): string | null => {
+    try {
+      baseSchemas.twoFA.validateSync(value);
       return null;
     } catch (error) {
       return (error as yup.ValidationError).message;

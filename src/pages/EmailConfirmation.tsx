@@ -14,6 +14,7 @@ import {
   ArrowBack,
 } from '@mui/icons-material';
 import { useAppStore } from '../store/appStore';
+import { syncValidators } from '../utils/validation';
 import NotificationDialog from '../components/NotificationDialog';
 
 const EmailConfirmation: React.FC = () => {
@@ -37,8 +38,9 @@ const EmailConfirmation: React.FC = () => {
   }, [isAuthenticated, navigate]);
 
   const handleVerifyCode = async () => {
-    if (!verificationCode || verificationCode.length !== 6) {
-      setAuthError('Por favor ingresa un código de 6 dígitos');
+    const validationError = syncValidators.validateTwoFA(verificationCode);
+    if (validationError) {
+      setAuthError(validationError);
       return;
     }
 
@@ -61,7 +63,7 @@ const EmailConfirmation: React.FC = () => {
   };
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '').slice(0, 6); // Only numbers, max 6 digits
+    const value = e.target.value.replace(/[^A-Za-z0-9]/g, ''); // Only alphanumeric characters
     setVerificationCode(value);
     // Clear any existing errors when user starts typing
     if (authError) {
@@ -175,13 +177,12 @@ const EmailConfirmation: React.FC = () => {
             <TextField
               value={verificationCode}
               onChange={handleCodeChange}
-              placeholder="000000"
+              placeholder="Código alfanumérico"
               inputProps={{
-                maxLength: 6,
                 style: {
                   textAlign: 'center',
-                  fontSize: '24px',
-                  letterSpacing: '8px',
+                  fontSize: '18px',
+                  letterSpacing: '2px',
                   fontWeight: 'bold',
                   color: '#453726',
                 },
@@ -222,7 +223,7 @@ const EmailConfirmation: React.FC = () => {
           <Button
             variant="contained"
             onClick={handleVerifyCode}
-            disabled={authLoading || verificationCode.length !== 6}
+            disabled={authLoading || !verificationCode || syncValidators.validateTwoFA(verificationCode) !== null}
             sx={{
               width: 342, // Matching Figma width
               height: 58, // Matching Figma height
