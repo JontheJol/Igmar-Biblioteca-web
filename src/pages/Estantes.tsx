@@ -7,29 +7,42 @@ import {
   FormControl, 
   Select, 
   MenuItem, 
-  Card
+  Card,
+  TextField,
+  InputAdornment
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AddIcon from '../assets/addIcon';
 import BookIcon from '../assets/bookIcon';
-import { Edit } from 'iconoir-react';
+import { Edit, StatsDownSquare, Search } from 'iconoir-react';
 import { useAppStore } from '../store/appStore';
 
 const Estantes: React.FC = () => {
   const navigate = useNavigate();
   const { estantes } = useAppStore();
   const [filtro, setFiltro] = useState('Todos');
+  const [busqueda, setBusqueda] = useState('');
 
   const handleFiltroChange = (event: SelectChangeEvent) => {
     setFiltro(event.target.value);
   };
 
+  const handleBusquedaChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setBusqueda(event.target.value);
+  };
+
   const estantesFiltrados = estantes.filter(estante => {
-    if (filtro === 'Disponibles') return estante.espaciosDisponibles > 0;
-    if (filtro === 'Llenos') return estante.espaciosDisponibles === 0;
-    return true; // 'Todos'
+    // Filtro por búsqueda (nombre del estante)
+    const coincideBusqueda = estante.nombre.toLowerCase().includes(busqueda.toLowerCase());
+    
+    // Filtro por disponibilidad
+    let coincideFiltro = true;
+    if (filtro === 'Disponibles') coincideFiltro = estante.espaciosDisponibles > 0;
+    if (filtro === 'Llenos') coincideFiltro = estante.espaciosDisponibles === 0;
+    
+    return coincideBusqueda && coincideFiltro;
   });
 
   const handleAddNewShelf = () => {
@@ -45,62 +58,127 @@ const Estantes: React.FC = () => {
   };
 
   return (
-    <Box sx={{ backgroundColor: '#fff9ec', position: 'relative' }}>
+    <Box sx={{ 
+      backgroundColor: '#fff9ec', 
+      position: 'relative',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      width: '100%',
+      minHeight: '100vh',
+      overflow: 'hidden' // Previene overflow horizontal
+    }}>
       <Box
         sx={{
-          padding: { xs: 3, sm: 4 },
+          padding: { xs: '16px 8px', sm: '20px 12px', md: '24px 16px' },
           position: 'relative',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          width: '100%',
+          maxWidth: { lg: '1200px', xl: '1400px' },
+          margin: '0 auto',
+          boxSizing: 'border-box' // Incluye padding en el ancho total
         }}
       >
-        {/* Botón Añadir estante - Posición responsiva */}
-        <Box
+        {/* Título */}
+        <Typography
+          variant="h1"
           sx={{
-            position: { xs: 'static', md: 'absolute' },
-            right: { md: '48px' },
-            top: { md: '74px' },
-            zIndex: 1,
-            mb: { xs: 2, md: 0 },
-            display: 'flex',
-            justifyContent: { xs: 'flex-end', md: 'flex-start' }
+            fontSize: { xs: '28px', sm: '40px', md: '56px' },
+            fontWeight: 400,
+            color: '#453726',
+            fontFamily: 'Rowdies, sans-serif',
+            marginBottom: { xs: '12px', sm: '16px', md: '20px' },
+            width: '100%',
+            maxWidth: '100%',
+            lineHeight: { xs: '32px', sm: '44px', md: '60px' },
+            letterSpacing: '0.1px',
+            wordWrap: 'break-word',
+            overflow: 'hidden',
+            textAlign: { xs: 'center', md: 'left' }
           }}
         >
+          Gestión de Estantes
+        </Typography>
+
+        {/* Contenedor para Subtítulo y Botón */}
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            justifyContent: { xs: 'center', md: 'space-between' },
+            alignItems: { xs: 'center', md: 'center' },
+            width: '100%',
+            marginBottom: { xs: '8px', sm: '10px', md: '12px' },
+            gap: { xs: 2, md: 0 }
+          }}
+        >
+          {/* Subtítulo */}
+          <Typography
+            variant="subtitle1"
+            sx={{
+              fontSize: { xs: '16px', sm: '18px', md: '20px' },
+              color: '#4B453D',
+              fontWeight: 400,
+              fontFamily: 'League Spartan, sans-serif',
+              lineHeight: { xs: '22px', sm: '24px', md: '26px' },
+              letterSpacing: '0.1px',
+              wordWrap: 'break-word',
+              overflow: 'hidden',
+              textAlign: { xs: 'center', md: 'left' },
+              flex: 1
+            }}
+          >
+            Administra los Estantes de la biblioteca en este espacio.
+          </Typography>
+
+          {/* Botón Añadir estante */}
           <Box
             onClick={handleAddNewShelf}
             sx={{
-              width: '100%',
-              height: '100%',
               background: '#2F5233',
               boxShadow: '0px 1px 3px 1px rgba(0, 0, 0, 0.15)',
               overflow: 'hidden',
-              borderRadius: 2,
+              borderRadius: { xs: 1.5, sm: 2 },
               justifyContent: 'space-between',
               alignItems: 'center',
               display: 'inline-flex',
               cursor: 'pointer',
+              flexShrink: 0,
+              minWidth: { xs: '180px', sm: '140px', md: '160px' },
+              width: { xs: '100%', sm: 'auto', md: 'auto' },
+              maxWidth: { xs: '220px', sm: 'none', md: 'none' },
               '&:hover': {
                 background: '#234026',
-              }
+                transform: 'translateY(-1px)',
+                boxShadow: '0px 2px 6px 2px rgba(0, 0, 0, 0.2)',
+              },
+              transition: 'all 0.2s ease-in-out'
             }}
           >
             <Box
               sx={{
-                height: 32,
-                padding: '6px 16px',
+                height: { xs: 40, sm: 40, md: 44 },
+                padding: { 
+                  xs: '10px 16px', 
+                  sm: '10px 16px', 
+                  md: '12px 20px' 
+                },
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
-                gap: '8px'
+                gap: { xs: '8px', sm: '8px', md: '10px' },
+                width: '100%'
               }}
             >
               <Typography
                 sx={{
                   color: '#FFF9EC',
-                  fontSize: 15,
+                  fontSize: { xs: 15, sm: 15, md: 16 },
                   fontFamily: 'League Spartan',
                   fontWeight: 500,
                   lineHeight: '20px',
-                  letterSpacing: 0.1
+                  letterSpacing: 0.1,
+                  whiteSpace: 'nowrap'
                 }}
               >
                 Añadir estante
@@ -110,104 +188,175 @@ const Estantes: React.FC = () => {
           </Box>
         </Box>
 
-        {/* Título */}
-        <Typography
-          variant="h1"
-          sx={{
-            fontSize: { xs: '32px', sm: '48px', md: '64px' },
-            fontWeight: 400,
-            color: '#453726',
-            fontFamily: 'Rowdies, sans-serif',
-            marginBottom: { xs: '20px', md: '35px' },
-            width: { xs: '100%', md: '859px' },
-            lineHeight: { xs: '36px', sm: '52px', md: '20px' },
-            letterSpacing: '0.1px'
-          }}
-        >
-          Gestión de Estantes
-        </Typography>
-
-        {/* Subtítulo */}
-        <Typography
-          variant="subtitle1"
-          sx={{
-            fontSize: { xs: '18px', sm: '20px', md: '24px' },
-            color: '#4B453D',
-            fontWeight: 400,
-            fontFamily: 'League Spartan, sans-serif',
-            marginBottom: '16px',
-            width: { xs: '100%', md: '743px' },
-            lineHeight: '20px',
-            letterSpacing: '0.1px'
-          }}
-        >
-          Administra los Estantes de la biblioteca en este espacio.
-        </Typography>
-
         {/* Línea divisoria */}
         <Box
           sx={{
-            width: { xs: '100%', md: '1144px' },
+            width: '100%',
+            maxWidth: '100%',
             height: 0,
             borderTop: '3px solid #3A332A',
-            marginBottom: '14px'
+            marginBottom: { xs: '8px', sm: '10px' },
+            boxSizing: 'border-box'
           }}
         />
 
-      {/* Filtro */}
-      <FormControl sx={{ mb: 3, minWidth: { xs: '100%', sm: 306 }, maxWidth: { xs: '100%', sm: 306 } }}>
-        <Select
-          value={filtro}
-          onChange={handleFiltroChange}
+        {/* Controles de búsqueda y filtro */}
+        <Box
           sx={{
-            height: 48,
-            backgroundColor: '#fff9ec',
-            border: '1px solid rgba(69,55,38,0.15)',
-            borderRadius: '10px',
-            fontFamily: 'League Spartan',
-            fontSize: { xs: '16px', sm: '20px' },
-            fontWeight: 300,
-            color: '#453726',
-            '& .MuiOutlinedInput-notchedOutline': {
-              border: 'none',
-            },
-            '&:hover .MuiOutlinedInput-notchedOutline': {
-              border: 'none',
-            },
-            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-              border: 'none',
-            },
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: { xs: 2, sm: 3 },
+            alignItems: { xs: 'stretch', sm: 'center' },
+            marginBottom: { xs: 2, sm: 3 },
+            width: '100%'
           }}
-          displayEmpty
         >
-          <MenuItem value="Todos">Filtrar por disponibilidad - Todos</MenuItem>
-          <MenuItem value="Disponibles">Disponibles</MenuItem>
-          <MenuItem value="Llenos">Llenos</MenuItem>
-        </Select>
-      </FormControl>
+          {/* Barra de búsqueda */}
+          <TextField
+            placeholder="Buscar estantes..."
+            value={busqueda}
+            onChange={handleBusquedaChange}
+            sx={{
+              flex: 1,
+              maxWidth: { xs: '100%', sm: '400px' },
+              '& .MuiOutlinedInput-root': {
+                height: 48,
+                backgroundColor: '#FFFFFF',
+                borderRadius: '10px',
+                fontFamily: 'League Spartan',
+                fontSize: { xs: '16px', sm: '18px' },
+                fontWeight: 300,
+                color: '#453726',
+                '& fieldset': {
+                  border: '1px solid rgba(69,55,38,0.15)',
+                },
+                '&:hover fieldset': {
+                  border: '1px solid rgba(69,55,38,0.25)',
+                },
+                '&.Mui-focused fieldset': {
+                  border: '1px solid rgba(69,55,38,0.35)',
+                },
+              },
+              '& .MuiInputBase-input::placeholder': {
+                color: 'rgba(69,55,38,0.6)',
+                opacity: 1,
+              }
+            }}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search width={20} height={20} color="rgba(69,55,38,0.6)" />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+
+          {/* Filtro con ícono */}
+          <FormControl sx={{ 
+            width: '100%',
+            maxWidth: { xs: '100%', sm: '300px' },
+            boxSizing: 'border-box'
+          }}>
+            <Select
+              value={filtro}
+              onChange={handleFiltroChange}
+              sx={{
+                height: 48,
+                backgroundColor: '#FFFFFF',
+                border: '1px solid rgba(69,55,38,0.15)',
+                borderRadius: '10px',
+                fontFamily: 'League Spartan',
+                fontSize: { xs: '16px', sm: '18px' },
+                fontWeight: 300,
+                color: '#453726',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  border: 'none',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  border: 'none',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  border: 'none',
+                },
+                '& .MuiSelect-select': {
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }
+              }}
+              displayEmpty
+              renderValue={(value) => (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <StatsDownSquare width={20} height={20} color="#453726" />
+                  <Typography sx={{ fontFamily: 'League Spartan', fontSize: 'inherit', color: 'inherit' }}>
+                    {value === 'Todos' ? 'Filtrar por disponibilidad - Todos' :
+                     value === 'Disponibles' ? 'Disponibles' : 'Llenos'}
+                  </Typography>
+                </Box>
+              )}
+            >
+              <MenuItem value="Todos">Filtrar por disponibilidad - Todos</MenuItem>
+              <MenuItem value="Disponibles">Disponibles</MenuItem>
+              <MenuItem value="Llenos">Llenos</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
 
       {/* Grid de Estantes */}
       <Box
         sx={{
           backgroundColor: 'rgba(225,197,171,0.8)',
-          borderRadius: '10px',
-          padding: { xs: '15px 8px', sm: '21px 10px' },
-          maxWidth: { xs: '100%', sm: '100%', md: '1200px' },
+          borderRadius: { xs: '8px', sm: '10px' },
+          padding: { 
+            xs: '12px 8px', 
+            sm: '16px 12px', 
+            md: '20px 16px',
+            lg: '24px 20px'
+          },
           width: '100%',
-          maxHeight: { xs: '1800px', sm: '950px', md: '516px' },
+          maxWidth: { 
+            xs: '100%', 
+            sm: '100%', 
+            md: '100%', 
+            lg: '900px',
+            xl: '1000px'
+          },
+          margin: '0 auto',
+          maxHeight: { 
+            xs: 'calc(100vh - 320px)', 
+            sm: 'calc(100vh - 300px)', 
+            md: 'calc(100vh - 280px)',
+            lg: 'calc(100vh - 260px)',
+            xl: '600px'
+          },
+          minHeight: { xs: '280px', sm: '350px', md: '400px' },
           overflowY: 'auto',
+          overflowX: 'hidden', // Previene overflow horizontal
           display: 'grid',
           gridTemplateColumns: { 
             xs: '1fr', 
             sm: 'repeat(2, 1fr)', 
-            md: 'repeat(3, 1fr)' 
+            md: 'repeat(3, 1fr)',
+            lg: 'repeat(3, 1fr)',
+            xl: 'repeat(3, 1fr)'
           },
           gridAutoRows: { 
-            xs: 'minmax(280px, auto)', 
-            sm: 'minmax(300px, auto)', 
-            md: 'minmax(240px, auto)' 
+            xs: 'minmax(240px, auto)', 
+            sm: 'minmax(260px, auto)', 
+            md: 'minmax(250px, auto)',
+            lg: 'minmax(270px, auto)'
           },
-          gap: { xs: '15px', sm: '20px', md: '23px' },
+          gap: { 
+            xs: '12px', 
+            sm: '16px', 
+            md: '20px',
+            lg: '24px'
+          },
+          justifyItems: 'center',
+          alignItems: 'start',
+          boxSizing: 'border-box',
           '&::-webkit-scrollbar': {
             width: '8px',
           },
@@ -229,34 +378,77 @@ const Estantes: React.FC = () => {
             key={estante.id}
             sx={{
               backgroundColor: '#ffffff',
-              borderRadius: '20px',
-              padding: { xs: '12px', sm: '16px', md: '20px' },
+              borderRadius: { xs: '12px', sm: '16px', md: '18px' },
+              padding: { 
+                xs: '12px', 
+                sm: '16px', 
+                md: '20px',
+                lg: '22px'
+              },
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: { xs: '8px', sm: '10px' },
+              gap: { xs: '6px', sm: '8px', md: '10px' },
               height: 'fit-content',
-              minHeight: { xs: '240px', sm: '260px', md: '280px' },
-              maxWidth: '280px',
+              minHeight: { 
+                xs: '220px', 
+                sm: '240px', 
+                md: '250px',
+                lg: '270px'
+              },
+              width: '100%',
+              maxWidth: { 
+                xs: 'calc(100% - 8px)', 
+                sm: '280px', 
+                md: '290px',
+                lg: '300px',
+                xl: '320px'
+              },
               margin: '0 auto',
-              boxSizing: 'border-box'
+              boxSizing: 'border-box',
+              overflow: 'hidden', // Previene overflow del contenido
+              transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+              }
             }}
           >
             {/* Avatar/Imagen del estante */}
             <Box
               sx={{
-                width: { xs: 48, sm: 56, md: 68 },
-                height: { xs: 48, sm: 56, md: 68 },
+                width: { 
+                  xs: 44, 
+                  sm: 52, 
+                  md: 60,
+                  lg: 68 
+                },
+                height: { 
+                  xs: 44, 
+                  sm: 52, 
+                  md: 60,
+                  lg: 68 
+                },
                 backgroundColor: '#f5eff7',
-                borderRadius: '8px',
+                borderRadius: { xs: '6px', sm: '7px', md: '8px' },
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0
               }}
             >
-              <BookIcon color="#999" width={32} height={32} />
+              <Box
+                sx={{
+                  width: { xs: '28px', sm: '30px', md: '32px' },
+                  height: { xs: '28px', sm: '30px', md: '32px' },
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <BookIcon color="#999" width={32} height={32} />
+              </Box>
             </Box>
 
             {/* Nombre del estante */}
@@ -264,17 +456,24 @@ const Estantes: React.FC = () => {
               sx={{
                 fontFamily: 'League Spartan',
                 fontWeight: 500,
-                fontSize: { xs: '16px', sm: '18px', md: '20px' },
+                fontSize: { xs: '14px', sm: '16px', md: '18px' },
                 color: '#000000',
                 letterSpacing: '0.1px',
                 textAlign: 'center',
-                lineHeight: '20px',
+                lineHeight: { xs: '18px', sm: '20px', md: '22px' },
                 margin: 0,
-                width: { xs: '140px', sm: '150px', md: '163.831px' },
+                width: '100%',
+                maxWidth: '100%',
+                padding: '0 4px',
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
-                height: '20.302px'
+                minHeight: { xs: '18px', sm: '20px', md: '22px' },
+                wordWrap: 'break-word',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                boxSizing: 'border-box'
               }}
             >
               {estante.nombre}
@@ -363,10 +562,13 @@ const Estantes: React.FC = () => {
             <Box sx={{ 
               display: 'flex', 
               flexDirection: 'row',
-              gap: '15px',
+              gap: { xs: '6px', sm: '8px', md: '12px' },
               alignItems: 'center',
               justifyContent: 'center',
-              width: { xs: '200px', sm: '220px', md: '228px' },
+              width: '100%',
+              maxWidth: '100%',
+              padding: '0 4px',
+              boxSizing: 'border-box',
               flexShrink: 0
             }}>
               <Box
@@ -374,9 +576,16 @@ const Estantes: React.FC = () => {
                 sx={{
                   backgroundColor: '#a47149',
                   color: '#ffffff',
-                  borderRadius: '8px',
-                  height: '30px',
-                  width: { xs: '80px', sm: '85px', md: '92.187px' },
+                  borderRadius: { xs: '6px', sm: '7px', md: '8px' },
+                  height: { xs: '26px', sm: '28px', md: '30px' },
+                  width: { 
+                    xs: 'calc(50% - 3px)', 
+                    sm: '80px', 
+                    md: '85px',
+                    lg: '90px'
+                  },
+                  minWidth: { xs: '60px', sm: '70px' },
+                  maxWidth: '120px',
                   boxShadow: '0px 1px 2px 0px rgba(0,0,0,0.3), 0px 1px 3px 1px rgba(0,0,0,0.15)',
                   cursor: 'pointer',
                   display: 'flex',
@@ -384,6 +593,8 @@ const Estantes: React.FC = () => {
                   justifyContent: 'center',
                   overflow: 'hidden',
                   position: 'relative',
+                  transition: 'background-color 0.2s ease-in-out',
+                  boxSizing: 'border-box',
                   '&:hover': {
                     backgroundColor: '#8b5e3c',
                   }
@@ -393,25 +604,37 @@ const Estantes: React.FC = () => {
                   sx={{
                     fontFamily: 'League Spartan',
                     fontWeight: 500,
-                    fontSize: { xs: '12px', sm: '13px', md: '15px' },
+                    fontSize: { 
+                      xs: '11px', 
+                      sm: '12px', 
+                      md: '14px',
+                      lg: '15px'
+                    },
                     letterSpacing: '0.1px',
                     lineHeight: '20px',
                     color: '#ffffff',
-                    marginRight: '4px'
+                    marginRight: { xs: '2px', sm: '3px', md: '4px' }
                   }}
                 >
                   Editar
                 </Typography>
-                <Edit width={16} height={16} color="#ffffff" />
+                <Edit width={15} height={15} color="#ffffff" />
               </Box>
               <Box
                 onClick={() => handleAddBooks(estante.id)}
                 sx={{
                   backgroundColor: '#2f5232',
                   color: '#ffffff',
-                  borderRadius: '8px',
-                  height: '30px',
-                  width: { xs: '85px', sm: '90px', md: '100.021px' },
+                  borderRadius: { xs: '6px', sm: '7px', md: '8px' },
+                  height: { xs: '26px', sm: '28px', md: '30px' },
+                  width: { 
+                    xs: 'calc(50% - 3px)', 
+                    sm: '85px', 
+                    md: '90px',
+                    lg: '95px'
+                  },
+                  minWidth: { xs: '65px', sm: '75px' },
+                  maxWidth: '130px',
                   boxShadow: '0px 1px 2px 0px rgba(0,0,0,0.3), 0px 1px 3px 1px rgba(0,0,0,0.15)',
                   cursor: 'pointer',
                   display: 'flex',
@@ -419,6 +642,8 @@ const Estantes: React.FC = () => {
                   justifyContent: 'center',
                   overflow: 'hidden',
                   position: 'relative',
+                  transition: 'background-color 0.2s ease-in-out',
+                  boxSizing: 'border-box',
                   '&:hover': {
                     backgroundColor: '#234026',
                   }
@@ -428,16 +653,21 @@ const Estantes: React.FC = () => {
                   sx={{
                     fontFamily: 'League Spartan',
                     fontWeight: 500,
-                    fontSize: { xs: '12px', sm: '13px', md: '15px' },
+                    fontSize: { 
+                      xs: '11px', 
+                      sm: '12px', 
+                      md: '14px',
+                      lg: '15px'
+                    },
                     letterSpacing: '0.1px',
                     lineHeight: '20px',
                     color: '#ffffff',
-                    marginRight: '4px'
+                    marginRight: { xs: '2px', sm: '3px', md: '4px' }
                   }}
                 >
                   Añadir
                 </Typography>
-                <BookIcon color="#ffffff" width={16} height={16} />
+                <BookIcon color="#ffffff" width={15} height={15} />
               </Box>
             </Box>
           </Card>
