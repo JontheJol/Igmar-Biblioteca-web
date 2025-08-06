@@ -80,16 +80,14 @@ const Estantes: React.FC = () => {
             onClick={handleAddNewShelf}
           />
         }
-      />
-      
+      >
         {/* Controles de búsqueda y filtro */}
         <Box
           sx={{
             display: 'flex',
             flexDirection: { xs: 'column', sm: 'row' },
             gap: { xs: 2, sm: 3 },
-            alignItems: { xs: 'stretch', sm: 'center' },
-            marginBottom: { xs: 2, sm: 3 },
+            mb: { xs: 4, md: 5 },
             width: '100%'
           }}
         >
@@ -103,55 +101,62 @@ const Estantes: React.FC = () => {
               maxWidth: { xs: '100%', sm: '400px' },
               '& .MuiOutlinedInput-root': {
                 height: 48,
-                backgroundColor: '#FFFFFF',
+                backgroundColor: '#ffffff',
+                border: '1px solid rgba(69,55,38,0.15)',
                 borderRadius: '10px',
                 fontFamily: 'League Spartan',
                 fontSize: { xs: '16px', sm: '18px' },
                 fontWeight: 300,
                 color: '#453726',
                 '& fieldset': {
-                  border: '1px solid rgba(69,55,38,0.15)',
+                  border: 'none',
                 },
                 '&:hover fieldset': {
-                  border: '1px solid rgba(69,55,38,0.25)',
+                  border: 'none',
                 },
                 '&.Mui-focused fieldset': {
-                  border: '1px solid rgba(69,55,38,0.35)',
+                  border: '2px solid #453726',
                 },
               },
-              '& .MuiInputBase-input::placeholder': {
-                color: 'rgba(69,55,38,0.6)',
-                opacity: 1,
-              }
-            }}
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search width={20} height={20} color="rgba(69,55,38,0.6)" />
-                  </InputAdornment>
-                ),
+              '& .MuiInputBase-input': {
+                '&::placeholder': {
+                  color: '#453726',
+                  opacity: 0.7,
+                }, 
               },
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search width={20} height={20} color="#453726" />
+                </InputAdornment>
+              ),
             }}
           />
 
-          {/* Filtro con ícono */}
-          <FormControl sx={{ 
-            width: '100%',
-            maxWidth: { xs: '100%', sm: '300px' },
-            boxSizing: 'border-box'
-          }}>
+          {/* Selector de filtro de disponibilidad */}
+          <FormControl sx={{ width: { xs: '100%', sm: '200px' } }}>
             <Select
               value={filtro}
               onChange={handleFiltroChange}
+              startAdornment={
+                <InputAdornment position="start">
+                  <StatsDownSquare 
+                    width={22} 
+                    height={22} 
+                    color="#453726"
+                    style={{ marginRight: '4px' }}
+                  />
+                </InputAdornment>
+              }
               sx={{
                 height: 48,
-                backgroundColor: '#FFFFFF',
+                backgroundColor: '#ffffff',
                 border: '1px solid rgba(69,55,38,0.15)',
                 borderRadius: '10px',
                 fontFamily: 'League Spartan',
                 fontSize: { xs: '16px', sm: '18px' },
-                fontWeight: 300,
+                fontWeight: 400,
                 color: '#453726',
                 '& .MuiOutlinedInput-notchedOutline': {
                   border: 'none',
@@ -160,24 +165,10 @@ const Estantes: React.FC = () => {
                   border: 'none',
                 },
                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  border: 'none',
+                  border: '2px solid #453726',
                 },
-                '& .MuiSelect-select': {
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }
               }}
               displayEmpty
-              renderValue={(value) => (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <StatsDownSquare width={20} height={20} color="#453726" />
-                  <Typography sx={{ fontFamily: 'League Spartan', fontSize: 'inherit', color: 'inherit' }}>
-                    {value === 'Todos' ? 'Filtrar por disponibilidad - Todos' :
-                     value === 'Disponibles' ? 'Disponibles' : 'Llenos'}
-                  </Typography>
-                </Box>
-              )}
             >
               <MenuItem value="Todos">Filtrar por disponibilidad - Todos</MenuItem>
               <MenuItem value="Disponibles">Disponibles</MenuItem>
@@ -185,6 +176,7 @@ const Estantes: React.FC = () => {
             </Select>
           </FormControl>
         </Box>
+      </PageHeader>
 
       {/* Grid de Estantes */}
       <Box

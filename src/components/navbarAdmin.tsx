@@ -19,7 +19,7 @@ const menuItems = [
   { label: 'Libros', icon: <BookIcon />, path: '/libros' },
   { label: 'Estantes', icon: <EstanteIcon />, path: '/estantes' },
   { label: 'Bibliotecarios', icon: <UserIcon />, path: '/bibliotecarios' },
-  { label: 'Cambiar Contraseña', icon: <SettingsIcon />, path: '/admin-settings' },
+  { label: 'Cambiar Contraseña', icon: <SettingsIcon />, path: '/cambiar-contrasena' },
 ];
 
 const NavbarAdmin = () => {

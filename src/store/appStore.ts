@@ -99,6 +99,7 @@ interface AppState {
   register: (data: RegisterData) => Promise<void>;
   confirmEmail: (email: string) => Promise<void>;
   logout: () => void;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   setAuthLoading: (loading: boolean) => void;
   setAuthError: (error: string | null) => void;
   // Notification actions
@@ -559,6 +560,37 @@ export const useAppStore = create<AppState>((set, get) => ({
       currentUser: null,
       authError: null,
     }),
+  changePassword: async (currentPassword: string, newPassword: string) => {
+    set({ authLoading: true, authError: null });
+    
+    try {
+      // Simulate API call for password change
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // In a real app, this would validate the current password with the backend
+      // For demo purposes, we'll accept any current password
+      
+      set({ authLoading: false });
+      
+      // Show success notification
+      get().showSuccessNotification(
+        'Contraseña actualizada',
+        'Tu contraseña ha sido cambiada exitosamente.'
+      );
+    } catch (error) {
+      set({ 
+        authLoading: false,
+        authError: 'Error al cambiar la contraseña'
+      });
+      
+      // Show error notification
+      get().showErrorNotification(
+        'Error',
+        'No se pudo cambiar la contraseña. Inténtalo de nuevo.'
+      );
+      throw error;
+    }
+  },
   setAuthLoading: (authLoading) => set({ authLoading }),
   setAuthError: (authError) => set({ authError }),
   // Notification actions

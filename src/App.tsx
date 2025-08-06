@@ -24,6 +24,7 @@ import AgregarBibliotecario from './pages/AgregarBibliotecario';
 import EditarBibliotecario from './pages/EditarBibliotecario';
 import NuevoLibroISBN from './pages/NuevoLibroISBN';
 import NuevoLibroFormulario from './pages/NuevoLibroFormulario';
+import CambiarContrasena from './pages/CambiarContrasena';
 // import NuevoLibroPosicion from './pages/NuevoLibroPosicion';
 import { useAppStore } from './store/appStore';
 
@@ -160,6 +161,15 @@ function App() {
                 <ProtectedRoute>
                   <RoleProtectedRoute requireSuperAdmin={true}>
                     <AdminSettings />
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+              
+              {/* Admin routes - available to both Admin and Super Admin */}
+              <Route path="/cambiar-contrasena" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute requiredRole={3}>
+                    <CambiarContrasena />
                   </RoleProtectedRoute>
                 </ProtectedRoute>
               } />
