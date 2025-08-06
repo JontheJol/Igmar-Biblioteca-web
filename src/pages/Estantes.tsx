@@ -18,6 +18,8 @@ import AddIcon from '../assets/addIcon';
 import BookIcon from '../assets/bookIcon';
 import { Edit, StatsDownSquare, Search } from 'iconoir-react';
 import { useAppStore } from '../store/appStore';
+import PageHeader from '../components/PageHeader';
+import ActionButton from '../components/ActionButton';
 
 const Estantes: React.FC = () => {
   const navigate = useNavigate();
@@ -68,138 +70,17 @@ const Estantes: React.FC = () => {
       minHeight: '100vh',
       overflow: 'hidden' // Previene overflow horizontal
     }}>
-      <Box
-        sx={{
-          padding: { xs: '16px 8px', sm: '20px 12px', md: '24px 16px' },
-          position: 'relative',
-          overflow: 'hidden',
-          width: '100%',
-          maxWidth: { lg: '1200px', xl: '1400px' },
-          margin: '0 auto',
-          boxSizing: 'border-box' // Incluye padding en el ancho total
-        }}
-      >
-        {/* Título */}
-        <Typography
-          variant="h1"
-          sx={{
-            fontSize: { xs: '28px', sm: '40px', md: '56px' },
-            fontWeight: 400,
-            color: '#453726',
-            fontFamily: 'Rowdies, sans-serif',
-            marginBottom: { xs: '12px', sm: '16px', md: '20px' },
-            width: '100%',
-            maxWidth: '100%',
-            lineHeight: { xs: '32px', sm: '44px', md: '60px' },
-            letterSpacing: '0.1px',
-            wordWrap: 'break-word',
-            overflow: 'hidden',
-            textAlign: { xs: 'center', md: 'left' }
-          }}
-        >
-          Gestión de Estantes
-        </Typography>
-
-        {/* Contenedor para Subtítulo y Botón */}
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: { xs: 'column', md: 'row' },
-            justifyContent: { xs: 'center', md: 'space-between' },
-            alignItems: { xs: 'center', md: 'center' },
-            width: '100%',
-            marginBottom: { xs: '8px', sm: '10px', md: '12px' },
-            gap: { xs: 2, md: 0 }
-          }}
-        >
-          {/* Subtítulo */}
-          <Typography
-            variant="subtitle1"
-            sx={{
-              fontSize: { xs: '16px', sm: '18px', md: '20px' },
-              color: '#4B453D',
-              fontWeight: 400,
-              fontFamily: 'League Spartan, sans-serif',
-              lineHeight: { xs: '22px', sm: '24px', md: '26px' },
-              letterSpacing: '0.1px',
-              wordWrap: 'break-word',
-              overflow: 'hidden',
-              textAlign: { xs: 'center', md: 'left' },
-              flex: 1
-            }}
-          >
-            Administra los Estantes de la biblioteca en este espacio.
-          </Typography>
-
-          {/* Botón Añadir estante */}
-          <Box
+      <PageHeader
+        title="Gestión de Estantes"
+        subtitle="Administra los Estantes de la biblioteca en este espacio."
+        actionButton={
+          <ActionButton
+            label="Añadir estante"
+            icon={<AddIcon />}
             onClick={handleAddNewShelf}
-            sx={{
-              background: '#2F5233',
-              boxShadow: '0px 1px 3px 1px rgba(0, 0, 0, 0.15)',
-              overflow: 'hidden',
-              borderRadius: { xs: 1.5, sm: 2 },
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              display: 'inline-flex',
-              cursor: 'pointer',
-              flexShrink: 0,
-              minWidth: { xs: '180px', sm: '140px', md: '160px' },
-              width: { xs: '100%', sm: 'auto', md: 'auto' },
-              maxWidth: { xs: '220px', sm: 'none', md: 'none' },
-              '&:hover': {
-                background: '#234026',
-                transform: 'translateY(-1px)',
-                boxShadow: '0px 2px 6px 2px rgba(0, 0, 0, 0.2)',
-              },
-              transition: 'all 0.2s ease-in-out'
-            }}
-          >
-            <Box
-              sx={{
-                height: { xs: 40, sm: 40, md: 44 },
-                padding: { 
-                  xs: '10px 16px', 
-                  sm: '10px 16px', 
-                  md: '12px 20px' 
-                },
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: { xs: '8px', sm: '8px', md: '10px' },
-                width: '100%'
-              }}
-            >
-              <Typography
-                sx={{
-                  color: '#FFF9EC',
-                  fontSize: { xs: 15, sm: 15, md: 16 },
-                  fontFamily: 'League Spartan',
-                  fontWeight: 500,
-                  lineHeight: '20px',
-                  letterSpacing: 0.1,
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                Añadir estante
-              </Typography>
-              <AddIcon />
-            </Box>
-          </Box>
-        </Box>
-
-        {/* Línea divisoria */}
-        <Box
-          sx={{
-            width: '100%',
-            maxWidth: '100%',
-            height: 0,
-            borderTop: '3px solid #3A332A',
-            marginBottom: { xs: '8px', sm: '10px' },
-            boxSizing: 'border-box'
-          }}
-        />
-
+          />
+        }
+      >
         {/* Controles de búsqueda y filtro */}
         <Box
           sx={{
@@ -303,6 +184,7 @@ const Estantes: React.FC = () => {
             </Select>
           </FormControl>
         </Box>
+      </PageHeader>
 
       {/* Grid de Estantes */}
       <Box
@@ -672,7 +554,6 @@ const Estantes: React.FC = () => {
             </Box>
           </Card>
         ))}
-      </Box>
       </Box>
     </Box>
   );

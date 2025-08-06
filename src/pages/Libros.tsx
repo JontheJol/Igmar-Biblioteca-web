@@ -18,6 +18,9 @@ import { useAppStore } from '../store/appStore';
 import BookIcon from '../assets/bookIcon';
 import { Edit, StatsDownSquare } from 'iconoir-react';
 import { Search as SearchIcon } from '@mui/icons-material';
+import PageHeader from '../components/PageHeader';
+import ActionButton from '../components/ActionButton';
+import AddIcon from '../assets/addIcon';
 
 const Libros: React.FC = () => {
   const navigate = useNavigate();
@@ -55,106 +58,27 @@ const Libros: React.FC = () => {
   };
 
   return (
-    <Box sx={{ backgroundColor: '#fff9ec', position: 'relative' }}>
-      <Box
-        sx={{
-          padding: { xs: '24px', sm: '32px', md: '40px' },
-          position: 'relative',
-          overflow: 'hidden'
-        }}
-      >
-        {/* Título */}
-        <Typography
-          variant="h1"
-          sx={{
-            fontSize: { xs: '32px', sm: '48px', md: '64px' },
-            fontWeight: 400,
-            color: '#453726',
-            fontFamily: 'Rowdies, sans-serif',
-            marginBottom: { xs: '30px', md: '45px' },
-            width: { xs: '100%', md: '859px' },
-            lineHeight: { xs: '36px', sm: '52px', md: '20px' },
-            letterSpacing: '0.1px'
-          }}
-        >
-          Gestión de libros
-        </Typography>
-
-        {/* Subtítulo y botón alineados */}
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: { xs: 'column', md: 'row' },
-            alignItems: { xs: 'stretch', md: 'flex-start' },
-            justifyContent: { xs: 'flex-start', md: 'space-between' },
-            marginBottom: { xs: '24px', md: '28px' },
-            width: '100%',
-            gap: { xs: 2, md: 3 }
-          }}
-        >
-          {/* Subtítulo */}
-          <Typography
-            variant="subtitle1"
-            sx={{
-              fontSize: { xs: '18px', sm: '20px', md: '24px' },
-              color: '#4B453D',
-              fontWeight: 400,
-              fontFamily: 'League Spartan, sans-serif',
-              lineHeight: '20px',
-              letterSpacing: '0.1px',
-              flex: { md: 1 },
-              order: { xs: 1, md: 1 }
-            }}
-          >
-            Administra la ubicación de los libros de la biblioteca en este espacio.
-          </Typography>
-
-          {/* Botón Nuevo Libro */}
-          <Box
+    <Box sx={{ 
+      backgroundColor: '#fff9ec', 
+      position: 'relative',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      width: '100%',
+      minHeight: '100vh',
+      overflow: 'hidden'
+    }}>
+      <PageHeader
+        title="Gestión de libros"
+        subtitle="Administra la ubicación de los libros de la biblioteca en este espacio."
+        actionButton={
+          <ActionButton
+            label="Nuevo Libro"
+            icon={<AddIcon />}
             onClick={() => navigate('/libros/nuevo')}
-            sx={{
-              backgroundColor: '#2f5232',
-              color: '#fff9ec',
-              borderRadius: '8px',
-              height: { xs: '38px', md: '44px' },
-              minWidth: { xs: '140px', md: '160px' },
-              boxShadow: '0px 1px 2px 0px rgba(0,0,0,0.3), 0px 1px 3px 1px rgba(0,0,0,0.15)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              order: { xs: 2, md: 2 },
-              '&:hover': {
-                backgroundColor: '#254428',
-              }
-            }}
-          >
-            <Typography
-              sx={{
-                fontFamily: 'League Spartan',
-                fontWeight: 500,
-                fontSize: { xs: '16px', md: '18px' },
-                letterSpacing: '0.1px',
-                lineHeight: '1',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              Nuevo Libro
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Línea divisoria */}
-        <Box
-          sx={{
-            width: '100%',
-            height: 0,
-            borderTop: '3px solid #3A332A',
-            marginBottom: { xs: '20px', md: '24px' }
-          }}
-        />
-
+          />
+        }
+      >
         {/* Filtros */}
         <Box
           sx={{
@@ -252,6 +176,7 @@ const Libros: React.FC = () => {
             </Select>
           </FormControl>
         </Box>
+      </PageHeader>
 
         {/* Lista de Libros */}
         <Box
@@ -557,7 +482,6 @@ const Libros: React.FC = () => {
             ))
           )}
         </Box>
-      </Box>
     </Box>
   );
 };
