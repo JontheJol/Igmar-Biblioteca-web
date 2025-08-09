@@ -5,9 +5,12 @@ import {
   FormControl,
   Select,
   MenuItem,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { useAppStore } from '../store/appStore';
 import NavbarAdmin from '../components/navbarAdmin';
 import PageHeader from '../components/PageHeader';
 import ActionButton from '../components/ActionButton';
@@ -16,17 +19,33 @@ import AddIcon from '../assets/addIcon';
 const AdminHome: React.FC = () => {
   const navigate = useNavigate();
   const [reportFilter, setReportFilter] = React.useState('Día');
+  
+  // Get stats from store
+  const { 
+    userStats, 
+    userStatsLoading, 
+    userStatsError, 
+    fetchUserStats 
+  } = useAppStore();
+
+  // Load stats on component mount and when filter changes
+  React.useEffect(() => {
+    const period = reportFilter === 'Día' ? 'day' : 
+                  reportFilter === 'Semana' ? 'week' :
+                  reportFilter === 'Mes' ? 'month' : 'year';
+    fetchUserStats(period);
+  }, [reportFilter, fetchUserStats]);
 
   const handleFilterChange = (event: SelectChangeEvent) => {
     setReportFilter(event.target.value);
   };
 
-  // Sample data - in a real app this would come from your store/API
-  const visitData = {
-    hombres: 178,
-    mujeres: 212,
-    otros: 105,
-    total: 495,
+  // Use stats from store or fallback data
+  const visitData = userStats || {
+    hombres: 0,
+    mujeres: 0,
+    otros: 0,
+    total: 0,
   };
 
   return (
@@ -55,13 +74,6 @@ const AdminHome: React.FC = () => {
         <PageHeader
           title="Bienvenido"
           subtitle="Panel de administración"
-          actionButton={
-            <ActionButton
-              label="Registrar libro"
-              icon={<AddIcon />}
-              onClick={() => navigate('/libros/nuevo')}
-            />
-          }
         >
           {/* Filter Section */}
           <Box
@@ -134,6 +146,13 @@ const AdminHome: React.FC = () => {
             overflow: 'hidden',
           }}
         >
+          {/* Error Alert */}
+          {userStatsError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {userStatsError}
+            </Alert>
+          )}
+
           {/* Statistics Card */}
           <Box
             sx={{
@@ -142,8 +161,30 @@ const AdminHome: React.FC = () => {
               p: 3,
               maxWidth: '900px',
               position: 'relative',
+              opacity: userStatsLoading ? 0.7 : 1,
+              transition: 'opacity 0.3s ease',
             }}
           >
+            {/* Loading overlay */}
+            {userStatsLoading && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  bgcolor: 'rgba(255, 255, 255, 0.8)',
+                  borderRadius: '10px',
+                  zIndex: 1,
+                }}
+              >
+                <CircularProgress size={60} sx={{ color: '#453726' }} />
+              </Box>
+            )}
           {/* Chart Area */}
           <Box
             sx={{
@@ -198,7 +239,7 @@ const AdminHome: React.FC = () => {
                   <Box
                     sx={{
                       width: '60px',
-                      height: `${(visitData.hombres / visitData.mujeres) * 160}px`,
+                      height: `${visitData.total > 0 ? Math.max(20, (visitData.hombres / Math.max(visitData.hombres, visitData.mujeres, visitData.otros)) * 160) : 20}px`,
                       bgcolor: '#a47149',
                       mb: 1,
                     }}
@@ -212,6 +253,16 @@ const AdminHome: React.FC = () => {
                   >
                     Hombres
                   </Typography>
+                  <Typography
+                    sx={{
+                      fontSize: '14px',
+                      color: '#4b453d',
+                      fontFamily: 'League Spartan, sans-serif',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    {visitData.hombres}
+                  </Typography>
                 </Box>
 
                 {/* Mujeres */}
@@ -219,7 +270,7 @@ const AdminHome: React.FC = () => {
                   <Box
                     sx={{
                       width: '60px',
-                      height: '160px', // Tallest bar
+                      height: `${visitData.total > 0 ? Math.max(20, (visitData.mujeres / Math.max(visitData.hombres, visitData.mujeres, visitData.otros)) * 160) : 20}px`,
                       bgcolor: '#2f5233',
                       mb: 1,
                     }}
@@ -233,6 +284,16 @@ const AdminHome: React.FC = () => {
                   >
                     Mujeres
                   </Typography>
+                  <Typography
+                    sx={{
+                      fontSize: '14px',
+                      color: '#4b453d',
+                      fontFamily: 'League Spartan, sans-serif',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    {visitData.mujeres}
+                  </Typography>
                 </Box>
 
                 {/* Otros */}
@@ -240,7 +301,7 @@ const AdminHome: React.FC = () => {
                   <Box
                     sx={{
                       width: '60px',
-                      height: `${(visitData.otros / visitData.mujeres) * 160}px`,
+                      height: `${visitData.total > 0 ? Math.max(20, (visitData.otros / Math.max(visitData.hombres, visitData.mujeres, visitData.otros)) * 160) : 20}px`,
                       bgcolor: '#8e9775',
                       mb: 1,
                     }}
@@ -253,6 +314,16 @@ const AdminHome: React.FC = () => {
                     }}
                   >
                     Otros
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontSize: '14px',
+                      color: '#4b453d',
+                      fontFamily: 'League Spartan, sans-serif',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    {visitData.otros}
                   </Typography>
                 </Box>
               </Box>
@@ -297,7 +368,22 @@ const AdminHome: React.FC = () => {
                   lineHeight: 1.2,
                 }}
               >
-                {visitData.total} visitas
+                {visitData.total}
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: '16px',
+                  fontWeight: 400,
+                  color: '#3a332a',
+                  fontFamily: 'League Spartan, sans-serif',
+                  lineHeight: 1.2,
+                  mt: 0.5,
+                }}
+              >
+                {reportFilter === 'Día' ? 'visitas hoy' :
+                 reportFilter === 'Semana' ? 'visitas esta semana' :
+                 reportFilter === 'Mes' ? 'visitas este mes' :
+                 'visitas este año'}
               </Typography>
             </Box>
           </Box>

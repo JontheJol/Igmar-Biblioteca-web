@@ -1,10 +1,22 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Box, Container } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import LoginForm from '../components/LoginForm';
 import { useAppStore } from '../store/appStore';
 
 const Login: React.FC = () => {
-  const { login, authLoading, authError } = useAppStore();
+  const navigate = useNavigate();
+  const { login, authLoading, authError, shouldRedirectTo2FA, clearRedirectTo2FA } = useAppStore();
+
+  // Handle redirection to 2FA
+  useEffect(() => {
+    if (shouldRedirectTo2FA) {
+      clearRedirectTo2FA();
+      setTimeout(() => {
+        navigate('/two-factor-auth');
+      }, 1500);
+    }
+  }, [shouldRedirectTo2FA, clearRedirectTo2FA, navigate]);
 
   return (
     <Box

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { NotificationData } from '../components/NotificationDialog';
-import type { Bibliotecario, Libro, Estante } from '../types';
+import type { Bibliotecario, Libro, Estante, Biblioteca, Administrador } from '../types';
 
 // Roles constants
 export const ROLES = {
@@ -24,6 +24,14 @@ export interface User {
   name: string;
   email: string;
   age: number;
+  gender?: 'masculino' | 'femenino' | 'otro' | 'no_especificado';
+}
+
+export interface UserStatsData {
+  hombres: number;
+  mujeres: number;
+  otros: number;
+  total: number;
 }
 
 export interface AuthUser {
@@ -48,10 +56,18 @@ interface AppState {
   users: User[];
   loading: boolean;
   error: string | null;
+  // User statistics
+  userStats: UserStatsData | null;
+  userStatsLoading: boolean;
+  userStatsError: string | null;
   // Bibliotecarios state
   bibliotecarios: Bibliotecario[];
   bibliotecarioLoading: boolean;
   bibliotecarioError: string | null;
+  // Administradores state
+  administradores: Administrador[];
+  administradorLoading: boolean;
+  administradorError: string | null;
   // Libros state
   libros: Libro[];
   libroLoading: boolean;
@@ -60,11 +76,17 @@ interface AppState {
   estantes: Estante[];
   estanteLoading: boolean;
   estanteError: string | null;
+  // Bibliotecas state
+  bibliotecas: Biblioteca[];
+  bibliotecaLoading: boolean;
+  bibliotecaError: string | null;
   // Auth state
   isAuthenticated: boolean;
   currentUser: AuthUser | null;
+  pendingUser: AuthUser | null; // User data stored during 2FA process
   authLoading: boolean;
   authError: string | null;
+  shouldRedirectTo2FA: boolean; // New flag for 2FA redirection
   // Notification state
   notification: NotificationData | null;
   showNotification: boolean;
@@ -74,6 +96,10 @@ interface AppState {
   updateUser: (id: number, updates: Partial<User>) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  // User statistics actions
+  fetchUserStats: (period?: 'day' | 'week' | 'month' | 'year') => Promise<void>;
+  setUserStatsLoading: (loading: boolean) => void;
+  setUserStatsError: (error: string | null) => void;
   // Bibliotecario CRUD actions
   addBibliotecario: (bibliotecario: Omit<Bibliotecario, 'id'>) => void;
   removeBibliotecario: (id: number) => void;
@@ -94,14 +120,23 @@ interface AppState {
   setEstanteLoading: (loading: boolean) => void;
   setEstanteError: (error: string | null) => void;
   getEstanteById: (id: number) => Estante | undefined;
+  // Biblioteca CRUD actions
+  addBiblioteca: (biblioteca: Omit<Biblioteca, 'id'>) => void;
+  removeBiblioteca: (id: number) => void;
+  updateBiblioteca: (id: number, updates: Partial<Biblioteca>) => void;
+  setBibliotecaLoading: (loading: boolean) => void;
+  setBibliotecaError: (error: string | null) => void;
+  getBibliotecaById: (id: number) => Biblioteca | undefined;
   // Auth actions
   login: (email: string, password: string) => Promise<void>;
+  verifyTwoFactor: (data: { codigo: string }) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   confirmEmail: (email: string) => Promise<void>;
   logout: () => void;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   setAuthLoading: (loading: boolean) => void;
   setAuthError: (error: string | null) => void;
+  clearRedirectTo2FA: () => void;
   // Notification actions
   showSuccessNotification: (title: string, message: string, buttonText?: string) => void;
   showErrorNotification: (title: string, message: string, details?: Record<string, string>, buttonText?: string) => void;
@@ -110,12 +145,23 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set, get) => ({
   users: [
-    { id: 1, name: 'Juan Pérez', email: 'juan@example.com', age: 30 },
-    { id: 2, name: 'María García', email: 'maria@example.com', age: 25 },
-    { id: 3, name: 'Carlos López', email: 'carlos@example.com', age: 35 },
+    { id: 1, name: 'Juan Pérez', email: 'juan@example.com', age: 30, gender: 'masculino' },
+    { id: 2, name: 'María García', email: 'maria@example.com', age: 25, gender: 'femenino' },
+    { id: 3, name: 'Carlos López', email: 'carlos@example.com', age: 35, gender: 'masculino' },
+    { id: 4, name: 'Ana Rodríguez', email: 'ana@example.com', age: 28, gender: 'femenino' },
+    { id: 5, name: 'Luis Martínez', email: 'luis@example.com', age: 42, gender: 'masculino' },
+    { id: 6, name: 'Carmen Jiménez', email: 'carmen@example.com', age: 33, gender: 'femenino' },
+    { id: 7, name: 'Roberto Silva', email: 'roberto@example.com', age: 29, gender: 'masculino' },
+    { id: 8, name: 'Patricia Morales', email: 'patricia@example.com', age: 31, gender: 'femenino' },
+    { id: 9, name: 'Alex Taylor', email: 'alex@example.com', age: 27, gender: 'otro' },
+    { id: 10, name: 'Jordan Smith', email: 'jordan@example.com', age: 24, gender: 'no_especificado' },
   ],
   loading: false,
   error: null,
+  // User statistics
+  userStats: null,
+  userStatsLoading: false,
+  userStatsError: null,
   // Bibliotecarios state
   bibliotecarios: [
     { id: 1, nombre: 'Ana González', correo: 'ana.gonzalez@biblioteca.com', numeroTelefono: '+52 555 123 4567' },
@@ -129,6 +175,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   ],
   bibliotecarioLoading: false,
   bibliotecarioError: null,
+  // Administradores state
+  administradores: [
+    { id: '1', nombre: 'Juan Hernández Pérez', correo: 'juanhdz@outlook.com', biblioteca: 'Biblioteca Central' },
+    { id: '2', nombre: 'María García López', correo: 'maria.garcia@biblioteca.com', biblioteca: 'Biblioteca Norte' },
+    { id: '3', nombre: 'Carlos Mendoza Silva', correo: 'carlos.mendoza@biblioteca.com', biblioteca: 'Biblioteca Sur' },
+    { id: '4', nombre: 'Ana Rodríguez Torres', correo: 'ana.rodriguez@biblioteca.com', biblioteca: 'Biblioteca Este' },
+  ],
+  administradorLoading: false,
+  administradorError: null,
   // Libros state
   libros: [
     { 
@@ -229,11 +284,63 @@ export const useAppStore = create<AppState>((set, get) => ({
   ],
   estanteLoading: false,
   estanteError: null,
+  // Bibliotecas state
+  bibliotecas: [
+    { 
+      id: 1, 
+      nombre: 'Biblioteca de la Universidad Tecnológica A', 
+      direccion: 'Av. ABC, Col. DHD #1177', 
+      estado: 'activa',
+      telefono: '+52 555 123 4567',
+      email: 'biblioteca@uta.edu.mx',
+      administrador: 'Dr. Ana González'
+    },
+    { 
+      id: 2, 
+      nombre: 'Biblioteca Central Municipal', 
+      direccion: 'Calle Principal #456, Centro', 
+      estado: 'activa',
+      telefono: '+52 555 234 5678',
+      email: 'central@biblioteca.municipal.mx',
+      administrador: 'Lic. Miguel Torres'
+    },
+    { 
+      id: 3, 
+      nombre: 'Biblioteca Instituto Tecnológico Superior', 
+      direccion: 'Blvd. Tecnológico Km 2.5', 
+      estado: 'mantenimiento',
+      telefono: '+52 555 345 6789',
+      email: 'biblioteca@its.edu.mx',
+      administrador: 'Ing. Carmen López'
+    },
+    { 
+      id: 4, 
+      nombre: 'Biblioteca Comunitaria Norte', 
+      direccion: 'Av. Norte #789, Col. Residencial', 
+      estado: 'activa',
+      telefono: '+52 555 456 7890',
+      email: 'norte@biblioteca.com.mx',
+      administrador: 'Mtro. Roberto Martínez'
+    },
+    { 
+      id: 5, 
+      nombre: 'Biblioteca Preparatoria Federal', 
+      direccion: 'Calle Educación #321, Zona Escolar', 
+      estado: 'inactiva',
+      telefono: '+52 555 567 8901',
+      email: 'prepa@biblioteca.fed.mx',
+      administrador: 'Dra. Patricia Hernández'
+    }
+  ],
+  bibliotecaLoading: false,
+  bibliotecaError: null,
   // Auth state
   isAuthenticated: false,
   currentUser: null,
+  pendingUser: null,
   authLoading: false,
   authError: null,
+  shouldRedirectTo2FA: false,
   // Notification state
   notification: null,
   showNotification: false,
@@ -278,6 +385,51 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   setLoading: (loading) => set({ loading }),
   setError: (error) => set({ error }),
+  // User statistics actions
+  fetchUserStats: async (period = 'day') => {
+    set({ userStatsLoading: true, userStatsError: null });
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Calculate stats from current users (in a real app, this would come from API)
+      const users = get().users;
+      const stats = {
+        hombres: users.filter(u => u.gender === 'masculino').length,
+        mujeres: users.filter(u => u.gender === 'femenino').length,
+        otros: users.filter(u => u.gender === 'otro' || u.gender === 'no_especificado' || !u.gender).length,
+        total: users.length,
+      };
+      
+      // Add some variation based on period for demo purposes
+      const multiplier = period === 'day' ? 1 : period === 'week' ? 7 : period === 'month' ? 30 : 365;
+      const periodStats = {
+        hombres: Math.floor(stats.hombres * multiplier * (0.8 + Math.random() * 0.4)),
+        mujeres: Math.floor(stats.mujeres * multiplier * (0.8 + Math.random() * 0.4)),
+        otros: Math.floor(stats.otros * multiplier * (0.8 + Math.random() * 0.4)),
+        total: 0,
+      };
+      periodStats.total = periodStats.hombres + periodStats.mujeres + periodStats.otros;
+      
+      set({ 
+        userStats: periodStats,
+        userStatsLoading: false,
+        userStatsError: null 
+      });
+    } catch (error) {
+      set({ 
+        userStatsLoading: false,
+        userStatsError: 'Error al cargar estadísticas de usuarios'
+      });
+      get().showErrorNotification(
+        'Error al cargar estadísticas',
+        'No se pudieron cargar las estadísticas de usuarios'
+      );
+    }
+  },
+  setUserStatsLoading: (userStatsLoading) => set({ userStatsLoading }),
+  setUserStatsError: (userStatsError) => set({ userStatsError }),
   // Bibliotecario CRUD actions
   addBibliotecario: (bibliotecario) => {
     set((state) => ({
@@ -407,6 +559,45 @@ export const useAppStore = create<AppState>((set, get) => ({
   getEstanteById: (id) => {
     return get().estantes.find(e => e.id === id);
   },
+  // Biblioteca CRUD actions
+  addBiblioteca: (newBiblioteca) => {
+    set((state) => ({
+      bibliotecas: [...state.bibliotecas, { ...newBiblioteca, id: Math.max(0, ...state.bibliotecas.map(b => b.id)) + 1 }]
+    }));
+    // Show success notification
+    get().showSuccessNotification(
+      'Biblioteca registrada',
+      `La biblioteca "${newBiblioteca.nombre}" ha sido registrada exitosamente.`
+    );
+  },
+  removeBiblioteca: (id) => {
+    const biblioteca = get().getBibliotecaById(id);
+    set((state) => ({
+      bibliotecas: state.bibliotecas.filter(biblioteca => biblioteca.id !== id)
+    }));
+    // Show success notification
+    get().showSuccessNotification(
+      'Biblioteca eliminada',
+      `La biblioteca "${biblioteca?.nombre || 'Desconocida'}" ha sido eliminada exitosamente.`
+    );
+  },
+  updateBiblioteca: (id, updates) => {
+    set((state) => ({
+      bibliotecas: state.bibliotecas.map(biblioteca => 
+        biblioteca.id === id ? { ...biblioteca, ...updates } : biblioteca
+      )
+    }));
+    // Show success notification
+    get().showSuccessNotification(
+      'Biblioteca actualizada',
+      'La biblioteca ha sido actualizada exitosamente.'
+    );
+  },
+  setBibliotecaLoading: (bibliotecaLoading) => set({ bibliotecaLoading }),
+  setBibliotecaError: (bibliotecaError) => set({ bibliotecaError }),
+  getBibliotecaById: (id) => {
+    return get().bibliotecas.find(b => b.id === id);
+  },
   // Auth actions
   login: async (email: string, password: string) => {
     set({ authLoading: true, authError: null });
@@ -424,22 +615,24 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
     
     if (userRole) {
+      // Instead of authenticating immediately, redirect to 2FA
       set({
-        isAuthenticated: true,
-        currentUser: {
+        authLoading: false,
+        authError: null,
+        shouldRedirectTo2FA: true,
+        // Store user data temporarily for after 2FA verification
+        pendingUser: {
           id: 1,
           name: userRole.roleName,
           email: email,
           roleId: userRole.roleId,
           roleName: userRole.roleName,
         },
-        authLoading: false,
-        authError: null,
       });
-      // Show success notification
+      // Show info notification about 2FA
       get().showSuccessNotification(
-        'Inicio de sesión exitoso',
-        `¡Bienvenido de vuelta, ${userRole.roleName}!`
+        'Credenciales correctas',
+        'Redirigiendo a verificación de dos factores...'
       );
     } else {
       set({
@@ -453,6 +646,54 @@ export const useAppStore = create<AppState>((set, get) => ({
         { 
           admin: 'admin@booksmart.com / password',
           superadmin: 'superadmin@booksmart.com / password'
+        }
+      );
+    }
+  },
+  verifyTwoFactor: async (data: { codigo: string }) => {
+    set({ authLoading: true, authError: null });
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // For demo purposes, accept any code with minimum 16 alphanumeric characters
+    if (data.codigo.length >= 16 && /^[A-Za-z0-9]{16,}$/.test(data.codigo)) {
+      const pendingUser = get().pendingUser;
+      
+      if (pendingUser) {
+        set({
+          isAuthenticated: true,
+          currentUser: pendingUser,
+          pendingUser: null, // Clear pending user
+          authLoading: false,
+          authError: null,
+        });
+        
+        // Show success notification
+        get().showSuccessNotification(
+          'Inicio de sesión exitoso',
+          `¡Bienvenido de vuelta, ${pendingUser.roleName}!`
+        );
+        
+        // Note: Navigation should be handled by the component using useNavigate
+      } else {
+        set({
+          authLoading: false,
+          authError: 'Sesión expirada. Por favor, inicia sesión nuevamente.',
+        });
+      }
+    } else {
+      set({
+        authLoading: false,
+        authError: 'Código de verificación inválido. Debe tener mínimo 16 caracteres alfanuméricos.',
+      });
+      // Show error notification
+      get().showErrorNotification(
+        'Error de verificación',
+        'Código de verificación inválido',
+        { 
+          formato: 'Debe ser alfanumérico de mínimo 16 caracteres',
+          ejemplo: 'ABC123DEF456GHI789'
         }
       );
     }
@@ -558,9 +799,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({
       isAuthenticated: false,
       currentUser: null,
+      pendingUser: null, // Clear pending user on logout
       authError: null,
     }),
-  changePassword: async (currentPassword: string, newPassword: string) => {
+  changePassword: async (_currentPassword: string, _newPassword: string) => {
     set({ authLoading: true, authError: null });
     
     try {
@@ -593,6 +835,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   setAuthLoading: (authLoading) => set({ authLoading }),
   setAuthError: (authError) => set({ authError }),
+  clearRedirectTo2FA: () => set({ shouldRedirectTo2FA: false }),
   // Notification actions
   showSuccessNotification: (title: string, message: string, buttonText = 'Aceptar') =>
     set({

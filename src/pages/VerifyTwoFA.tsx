@@ -17,16 +17,23 @@ import { useAppStore, ROLES } from '../store/appStore';
 import { syncValidators } from '../utils/validation';
 import NotificationDialog from '../components/NotificationDialog';
 
-const EmailConfirmation: React.FC = () => {
+const VerifyTwoFA: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { authError, setAuthError, confirmEmail, authLoading, notification, isAuthenticated, hideNotification, currentUser } = useAppStore();
+  const { authError, setAuthError, verifyTwoFactor, authLoading, notification, isAuthenticated, hideNotification, pendingUser, currentUser } = useAppStore();
   const [verificationCode, setVerificationCode] = useState('');
 
-  // Get email from navigation state or default message
-  const userEmail = location.state?.email || 'tu correo electrónico';
+  // Get email from pendingUser or navigation state or default message
+  const userEmail = pendingUser?.email || location.state?.email || 'tu correo electrónico';
 
-  // Auto-navigate when user becomes authenticated after email confirmation
+  // Redirect back to login if no pending user
+  useEffect(() => {
+    if (!pendingUser && !isAuthenticated) {
+      navigate('/login');
+    }
+  }, [pendingUser, isAuthenticated, navigate]);
+
+  // Auto-navigate when user becomes authenticated after 2FA verification
   useEffect(() => {
     if (isAuthenticated && currentUser) {
       // Add a small delay to show the success notification briefly
@@ -50,7 +57,7 @@ const EmailConfirmation: React.FC = () => {
     }
 
     try {
-      await confirmEmail(userEmail);
+      await verifyTwoFactor({ codigo: verificationCode });
       // El store ya maneja la notificación automáticamente
     } catch (error) {
       // Error handled by store
@@ -150,7 +157,7 @@ const EmailConfirmation: React.FC = () => {
               mx: 'auto',
             }}
           >
-            Por tu seguridad, necesitamos verificar tu correo electrónico
+            Verifica tu inicio de sesión
           </Typography>
 
           {/* Subtitle */}
@@ -167,7 +174,7 @@ const EmailConfirmation: React.FC = () => {
               mx: 'auto',
             }}
           >
-            Ingresa el código que te enviamos
+            Ingresa el código que enviamos a tu correo
           </Typography>
 
           {/* Error Message */}
@@ -267,7 +274,7 @@ const EmailConfirmation: React.FC = () => {
                 mb: 0.5,
               }}
             >
-              El Correo fue enviado a
+              El código fue enviado a
             </Typography>
             <Typography
               variant="body1"
@@ -295,4 +302,4 @@ const EmailConfirmation: React.FC = () => {
   );
 };
 
-export default EmailConfirmation;
+export default VerifyTwoFA;

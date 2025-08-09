@@ -17,8 +17,12 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Users from './pages/Users';
 import EmailConfirmation from './pages/EmailConfirmation';
+import VerifyTwoFA from './pages/VerifyTwoFA';
 import ValidationExample from './pages/ValidationExample';
 import AdminSettings from './pages/AdminSettings';
+import EditarBiblioteca from './pages/EditarBiblioteca';
+import EditarAdministrador from './pages/EditarAdministrador';
+import Administradores from './pages/Administradores';
 import Bibliotecarios from './pages/Bibliotecarios';
 import AgregarBibliotecario from './pages/AgregarBibliotecario';
 import EditarBibliotecario from './pages/EditarBibliotecario';
@@ -124,6 +128,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/email-confirmation" element={<EmailConfirmation />} />
+              <Route path="/two-factor-auth" element={<VerifyTwoFA />} />
               <Route path="/validation-example" element={<ValidationExample />} />
               
               {/* Public authenticated routes */}
@@ -161,6 +166,30 @@ function App() {
                 <ProtectedRoute>
                   <RoleProtectedRoute requireSuperAdmin={true}>
                     <AdminSettings />
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/editar-biblioteca/:id" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute requireSuperAdmin={true}>
+                    <EditarBiblioteca />
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/administradores" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute requireSuperAdmin={true}>
+                    <Administradores />
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/editar-administrador/:id" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute requireSuperAdmin={true}>
+                    <EditarAdministrador />
                   </RoleProtectedRoute>
                 </ProtectedRoute>
               } />

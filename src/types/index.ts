@@ -25,6 +25,22 @@ export interface BibliotecarioFormData {
   numeroTelefono: string;
 }
 
+export interface Administrador {
+  id: string;
+  nombre: string;
+  correo: string;
+  biblioteca?: string;
+  telefono?: string;
+  fechaCreacion?: string;
+}
+
+export interface AdministradorFormData {
+  nombre: string;
+  correo: string;
+  biblioteca?: string;
+  telefono?: string;
+}
+
 export interface Libro {
   id: number;
   titulo: string;
@@ -61,6 +77,25 @@ export interface Estante {
   etiquetas?: string[];
 }
 
+export interface Biblioteca {
+  id: number;
+  nombre: string;
+  direccion: string;
+  estado: 'activa' | 'inactiva' | 'mantenimiento';
+  telefono?: string;
+  email?: string;
+  fechaCreacion?: string;
+  administrador?: string;
+}
+
+export interface BibliotecaFormData {
+  nombre: string;
+  direccion: string;
+  estado: 'activa' | 'inactiva' | 'mantenimiento';
+  telefono?: string;
+  email?: string;
+  administrador?: string;
+}
 
 export interface RouteParams {
   id?: string;

@@ -44,6 +44,7 @@ export const baseSchemas = {
   // 2FA
   twoFA: yup
     .string()
+    .required('El código de verificación es requerido')
     .matches(REGEX_PATTERNS.TWO_FA, REGEX_ERROR_MESSAGES.TWO_FA),
 
   // CURP
