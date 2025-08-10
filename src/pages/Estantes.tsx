@@ -330,108 +330,23 @@ const Estantes: React.FC = () => {
             <Typography
               sx={{
                 fontFamily: 'League Spartan',
-                fontWeight: 500,
-                fontSize: { xs: '14px', sm: '16px', md: '18px' },
-                color: '#000000',
-                letterSpacing: '0.1px',
+                fontWeight: 600,
+                fontSize: { xs: '24px', sm: '28px', md: '32px' },
+                color: '#453726',
+                letterSpacing: '0.2px',
                 textAlign: 'center',
-                lineHeight: { xs: '18px', sm: '20px', md: '22px' },
-                margin: 0,
+                lineHeight: { xs: '28px', sm: '32px', md: '36px' },
+                margin: '20px 0',
                 width: '100%',
-                maxWidth: '100%',
-                padding: '0 4px',
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
-                minHeight: { xs: '18px', sm: '20px', md: '22px' },
-                wordWrap: 'break-word',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
+                minHeight: { xs: '40px', sm: '45px', md: '50px' },
                 boxSizing: 'border-box'
               }}
             >
               {estante.nombre}
             </Typography>
-
-            {/* Información del estante */}
-            <Box 
-              sx={{ 
-                width: '100%',
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, minmax(0px, 1fr))',
-                gridTemplateRows: 'repeat(2, minmax(0px, 1fr))',
-                gap: '10px 0',
-                height: '68px'
-              }}
-            >
-              <Typography
-                sx={{
-                  gridArea: '1 / 1',
-                  fontFamily: 'League Spartan',
-                  fontWeight: 400,
-                  fontSize: { xs: '13px', sm: '14px', md: '15px' },
-                  color: '#000000',
-                  letterSpacing: '0.1px',
-                  lineHeight: '20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  height: '20.302px'
-                }}
-              >
-                Cantidad de Libros
-              </Typography>
-              <Typography
-                sx={{
-                  gridArea: '1 / 2',
-                  fontFamily: 'League Spartan',
-                  fontWeight: 500,
-                  fontSize: '14px',
-                  color: '#453726',
-                  letterSpacing: '0.1px',
-                  lineHeight: '20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'flex-end',
-                  whiteSpace: 'pre'
-                }}
-              >
-                {estante.cantidadLibros}
-              </Typography>
-              <Typography
-                sx={{
-                  gridArea: '2 / 1',
-                  fontFamily: 'League Spartan',
-                  fontWeight: 400,
-                  fontSize: { xs: '13px', sm: '14px', md: '15px' },
-                  color: '#000000',
-                  letterSpacing: '0.1px',
-                  lineHeight: '20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  whiteSpace: 'pre'
-                }}
-              >
-                Espacios disponible
-              </Typography>
-              <Typography
-                sx={{
-                  gridArea: '2 / 2',
-                  fontFamily: 'League Spartan',
-                  fontWeight: 500,
-                  fontSize: '14px',
-                  color: '#453726',
-                  letterSpacing: '0.1px',
-                  lineHeight: '20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'flex-end',
-                  whiteSpace: 'pre'
-                }}
-              >
-                {estante.espaciosDisponibles}
-              </Typography>
-            </Box>
 
             {/* Botones de acción */}
             <Box sx={{ 
