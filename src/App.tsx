@@ -29,6 +29,7 @@ import EditarBibliotecario from './pages/EditarBibliotecario';
 import NuevoLibroISBN from './pages/NuevoLibroISBN';
 import NuevoLibroFormulario from './pages/NuevoLibroFormulario';
 import { useAuthInitialization, useTokenRefresh } from './hooks/useAuth';
+import { useBusinessDataLoader } from './hooks/useBusinessDataLoader';
 import './utils/diagnostic'; // Importar utilidades de diagnóstico
 import CambiarContrasena from './pages/CambiarContrasena';
 // import NuevoLibroPosicion from './pages/NuevoLibroPosicion';
@@ -125,6 +126,9 @@ function App() {
   
   // Configurar renovación automática de tokens
   useTokenRefresh();
+
+  // Cargar datos de negocio cuando se autentica el usuario
+  useBusinessDataLoader();
 
   return (
     <ThemeProvider theme={theme}>

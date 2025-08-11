@@ -18,6 +18,7 @@ import { useAppStore } from '../store/appStore';
 import { Edit, StatsDownSquare } from 'iconoir-react';
 import { Search as SearchIcon } from '@mui/icons-material';
 import PageHeader from '../components/PageHeader';
+import { ApiStatusComponent } from '../components/ApiStatusComponent';
 
 const AdminSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -112,6 +113,9 @@ const AdminSettings: React.FC = () => {
         title="Bienvenido"
         subtitle="Administra las bibliotecas que implementan este sistema."
       >
+        {/* Estado de conectividad de APIs */}
+        <ApiStatusComponent />
+        
         {/* Filtros */}
         <Box
           sx={{

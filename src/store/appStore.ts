@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { NotificationData } from '../components/NotificationDialog';
 import type { Bibliotecario, Libro, Estante, Biblioteca, Administrador } from '../types';
 import { authApi, getErrorMessage, getErrorDetails } from '../services/api';
+import { businessApi, mappers } from '../services/businessApi';
 
 // Roles constants
 export const ROLES = {
@@ -115,23 +116,26 @@ interface AppState {
   setBibliotecarioLoading: (loading: boolean) => void;
   setBibliotecarioError: (error: string | null) => void;
   // Libro CRUD actions
-  addLibro: (libro: Omit<Libro, 'id'>) => void;
-  removeLibro: (id: number) => void;
-  updateLibro: (id: number, updates: Partial<Libro>) => void;
+  loadLibros: (bibliotecaId?: number) => Promise<void>;
+  addLibro: (libro: Omit<Libro, 'id'>) => Promise<void>;
+  removeLibro: (id: number) => Promise<void>;
+  updateLibro: (id: number, updates: Partial<Libro>) => Promise<void>;
   setLibroLoading: (loading: boolean) => void;
   setLibroError: (error: string | null) => void;
   getLibroById: (id: number) => Libro | undefined;
   // Estante CRUD actions
-  addEstante: (estante: Omit<Estante, 'id'>) => void;
-  removeEstante: (id: number) => void;
-  updateEstante: (id: number, updates: Partial<Estante>) => void;
+  loadEstantes: (bibliotecaId?: number) => Promise<void>;
+  addEstante: (estante: Omit<Estante, 'id'>) => Promise<void>;
+  removeEstante: (id: number) => Promise<void>;
+  updateEstante: (id: number, updates: Partial<Estante>) => Promise<void>;
   setEstanteLoading: (loading: boolean) => void;
   setEstanteError: (error: string | null) => void;
   getEstanteById: (id: number) => Estante | undefined;
   // Biblioteca CRUD actions
-  addBiblioteca: (biblioteca: Omit<Biblioteca, 'id'>) => void;
-  removeBiblioteca: (id: number) => void;
-  updateBiblioteca: (id: number, updates: Partial<Biblioteca>) => void;
+  loadBibliotecas: () => Promise<void>;
+  addBiblioteca: (biblioteca: Omit<Biblioteca, 'id'>) => Promise<void>;
+  removeBiblioteca: (id: number) => Promise<void>;
+  updateBiblioteca: (id: number, updates: Partial<Biblioteca>) => Promise<void>;
   setBibliotecaLoading: (loading: boolean) => void;
   setBibliotecaError: (error: string | null) => void;
   getBibliotecaById: (id: number) => Biblioteca | undefined;
@@ -193,153 +197,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   administradorLoading: false,
   administradorError: null,
   // Libros state
-  libros: [
-    { 
-      id: 1, 
-      titulo: 'El Quijote de la Mancha', 
-      autor: 'Miguel de Cervantes', 
-      editorial: 'Editorial Planeta', 
-      estante: 'A24',
-      isbn: '978-84-08-07282-4',
-      descripcion: 'Una obra maestra de la literatura universal que narra las aventuras de Alonso Quixano, un hidalgo que enloquece leyendo libros de caballerías y decide convertirse en caballero andante bajo el nombre de Don Quijote de la Mancha.'
-    },
-    { 
-      id: 2, 
-      titulo: 'Cien años de soledad', 
-      autor: 'Gabriel García Márquez', 
-      editorial: 'Editorial Sudamericana', 
-      estante: 'B15',
-      isbn: '978-950-07-2677-5',
-      descripcion: 'La historia multigeneracional de la familia Buendía en el pueblo ficticio de Macondo. Una obra cumbre del realismo mágico que explora temas de soledad, amor, poder y el destino cíclico de América Latina.'
-    },
-    { 
-      id: 3, 
-      titulo: 'La Odisea', 
-      autor: 'Homero', 
-      editorial: 'Editorial Gredos', 
-      estante: 'C08',
-      isbn: '978-84-249-1009-8'
-    },
-    { 
-      id: 4, 
-      titulo: 'Rayuela', 
-      autor: 'Julio Cortázar', 
-      editorial: 'Editorial Alfaguara', 
-      estante: 'D12',
-      isbn: '978-84-204-7680-3'
-    },
-    { 
-      id: 5, 
-      titulo: 'Pedro Páramo', 
-      autor: 'Juan Rulfo', 
-      editorial: 'Editorial RM', 
-      estante: 'E05',
-      isbn: '978-968-16-6963-7'
-    },
-    {
-      id: 6,
-      titulo: 'El Amor en los Tiempos del Cólera',
-      autor: 'Gabriel García Márquez',
-      editorial: 'Editorial Sudamericana',
-      estante: 'B16',
-      isbn: '978-950-07-2678-2'
-    },
-    {
-      id: 7,
-      titulo: 'La Casa de los Espíritus',
-      autor: 'Isabel Allende',
-      editorial: 'Editorial Plaza & Janés',
-      estante: 'F03'
-    },
-    {
-      id: 8,
-      titulo: 'Ficciones',
-      autor: 'Jorge Luis Borges',
-      editorial: 'Editorial Emecé',
-      estante: 'G11',
-      isbn: '978-950-04-0041-2'
-    },
-    {
-      id: 9,
-      titulo: 'El Túnel',
-      autor: 'Ernesto Sabato',
-      editorial: 'Editorial Seix Barral',
-      estante: 'H07'
-    },
-    {
-      id: 10,
-      titulo: 'Como Agua para Chocolate',
-      autor: 'Laura Esquivel',
-      editorial: 'Editorial Planeta',
-      estante: 'I19',
-      isbn: '978-84-08-00234-2'
-    }
-  ],
+  libros: [],
   libroLoading: false,
   libroError: null,
   // Estantes state
-  estantes: [
-    { id: 1, nombre: 'A24', ubicacion: 'A24', fila: '2', columna: '4', cantidadLibros: 32, espaciosDisponibles: 3, etiquetas: ['Literatura', 'Clásicos'] },
-    { id: 2, nombre: 'B15', ubicacion: 'B15', fila: '1', columna: '5', cantidadLibros: 28, espaciosDisponibles: 7, etiquetas: ['Ficción'] },
-    { id: 3, nombre: 'Sector-C-08', ubicacion: 'Sector-C-08', fila: '3', columna: '8', cantidadLibros: 30, espaciosDisponibles: 5, etiquetas: ['Historia'] },
-    { id: 4, nombre: 'Planta-2-D12', ubicacion: 'Planta-2-D12', fila: '1', columna: '2', cantidadLibros: 25, espaciosDisponibles: 10, etiquetas: ['Literatura'] },
-    { id: 5, nombre: 'E05', ubicacion: 'E05', fila: '2', columna: '5', cantidadLibros: 35, espaciosDisponibles: 0, etiquetas: ['Ciencia'] },
-    { id: 6, nombre: 'Sala-Principal-F03', ubicacion: 'Sala-Principal-F03', fila: '4', columna: '3', cantidadLibros: 22, espaciosDisponibles: 13, etiquetas: ['Arte'] },
-    { id: 7, nombre: 'G11', ubicacion: 'G11', fila: '1', columna: '1', cantidadLibros: 29, espaciosDisponibles: 6, etiquetas: ['Filosofía'] },
-    { id: 8, nombre: 'Biblioteca-H07', ubicacion: 'Biblioteca-H07', fila: '3', columna: '7', cantidadLibros: 31, espaciosDisponibles: 4, etiquetas: ['Psicología'] },
-    { id: 9, nombre: 'I19', ubicacion: 'I19', fila: '1', columna: '9', cantidadLibros: 27, espaciosDisponibles: 8, etiquetas: ['Cocina', 'Lifestyle'] },
-    { id: 10, nombre: 'Segundo-Piso-J26', ubicacion: 'Segundo-Piso-J26', fila: '2', columna: '6', cantidadLibros: 33, espaciosDisponibles: 2, etiquetas: ['Biografías'] },
-  ],
+  estantes: [],
   estanteLoading: false,
   estanteError: null,
   // Bibliotecas state
-  bibliotecas: [
-    { 
-      id: 1, 
-      nombre: 'Biblioteca de la Universidad Tecnológica A', 
-      direccion: 'Av. ABC, Col. DHD #1177', 
-      estado: 'activa',
-      telefono: '+52 555 123 4567',
-      email: 'biblioteca@uta.edu.mx',
-      administrador: 'Dr. Ana González'
-    },
-    { 
-      id: 2, 
-      nombre: 'Biblioteca Central Municipal', 
-      direccion: 'Calle Principal #456, Centro', 
-      estado: 'activa',
-      telefono: '+52 555 234 5678',
-      email: 'central@biblioteca.municipal.mx',
-      administrador: 'Lic. Miguel Torres'
-    },
-    { 
-      id: 3, 
-      nombre: 'Biblioteca Instituto Tecnológico Superior', 
-      direccion: 'Blvd. Tecnológico Km 2.5', 
-      estado: 'mantenimiento',
-      telefono: '+52 555 345 6789',
-      email: 'biblioteca@its.edu.mx',
-      administrador: 'Ing. Carmen López'
-    },
-    { 
-      id: 4, 
-      nombre: 'Biblioteca Comunitaria Norte', 
-      direccion: 'Av. Norte #789, Col. Residencial', 
-      estado: 'activa',
-      telefono: '+52 555 456 7890',
-      email: 'norte@biblioteca.com.mx',
-      administrador: 'Mtro. Roberto Martínez'
-    },
-    { 
-      id: 5, 
-      nombre: 'Biblioteca Preparatoria Federal', 
-      direccion: 'Calle Educación #321, Zona Escolar', 
-      estado: 'inactiva',
-      telefono: '+52 555 567 8901',
-      email: 'prepa@biblioteca.fed.mx',
-      administrador: 'Dra. Patricia Hernández'
-    }
-  ],
+  bibliotecas: [],
   bibliotecaLoading: false,
   bibliotecaError: null,
     // Auth state
@@ -480,42 +346,143 @@ export const useAppStore = create<AppState>((set, get) => ({
   setBibliotecarioLoading: (bibliotecarioLoading) => set({ bibliotecarioLoading }),
   setBibliotecarioError: (bibliotecarioError) => set({ bibliotecarioError }),
   // Libro CRUD actions
-  addLibro: (libro) => {
-    set((state) => ({
-      libros: [...state.libros, { ...libro, id: Date.now() }],
-    }));
-    // Show success notification
-    get().showSuccessNotification(
-      'Libro agregado',
-      `El libro "${libro.titulo}" ha sido agregado exitosamente`
-    );
-  },
-  removeLibro: (id) => {
-    const libro = get().libros.find(l => l.id === id);
-    set((state) => ({
-      libros: state.libros.filter((l) => l.id !== id),
-    }));
-    // Show success notification
-    if (libro) {
-      get().showSuccessNotification(
-        'Libro eliminado',
-        `El libro "${libro.titulo}" ha sido eliminado exitosamente`
+  loadLibros: async (bibliotecaId?: number) => {
+    set({ libroLoading: true, libroError: null });
+    
+    try {
+      const params = bibliotecaId ? { biblioteca_id: bibliotecaId } : undefined;
+      const apiResponse = await businessApi.getLibros(params);
+      const libros = apiResponse.map(mappers.libroResponseToLibro);
+      
+      set({
+        libros,
+        libroLoading: false,
+        libroError: null,
+      });
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      set({
+        libroLoading: false,
+        libroError: errorMessage,
+      });
+      
+      get().showErrorNotification(
+        'Error al cargar libros',
+        errorMessage,
+        getErrorDetails(error)
       );
     }
   },
-  updateLibro: (id, updates) => {
-    const libro = get().libros.find(l => l.id === id);
-    set((state) => ({
-      libros: state.libros.map((l) =>
-        l.id === id ? { ...l, ...updates } : l
-      ),
-    }));
-    // Show success notification
-    if (libro) {
+  addLibro: async (libro) => {
+    set({ libroLoading: true, libroError: null });
+    
+    try {
+      // Necesitamos el biblioteca_id del usuario actual
+      const currentUser = get().currentUser;
+      const bibliotecaId = currentUser?.bibliotecaId || 1; // Default o manejar error
+      
+      const apiData = mappers.libroToApiRequest(libro, bibliotecaId);
+      const apiResponse = await businessApi.createLibro(apiData);
+      const newLibro = mappers.libroResponseToLibro(apiResponse.libro);
+      
+      set((state) => ({
+        libros: [...state.libros, newLibro],
+        libroLoading: false,
+        libroError: null,
+      }));
+      
+      get().showSuccessNotification(
+        'Libro agregado',
+        `El libro "${newLibro.titulo}" ha sido agregado exitosamente`
+      );
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      set({
+        libroLoading: false,
+        libroError: errorMessage,
+      });
+      
+      get().showErrorNotification(
+        'Error al crear libro',
+        errorMessage,
+        getErrorDetails(error)
+      );
+      throw error;
+    }
+  },
+  removeLibro: async (id) => {
+    set({ libroLoading: true, libroError: null });
+    
+    try {
+      const libro = get().libros.find(l => l.id === id);
+      await businessApi.deleteLibro(id);
+      
+      set((state) => ({
+        libros: state.libros.filter((l) => l.id !== id),
+        libroLoading: false,
+        libroError: null,
+      }));
+      
+      if (libro) {
+        get().showSuccessNotification(
+          'Libro eliminado',
+          `El libro "${libro.titulo}" ha sido eliminado exitosamente`
+        );
+      }
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      set({
+        libroLoading: false,
+        libroError: errorMessage,
+      });
+      
+      get().showErrorNotification(
+        'Error al eliminar libro',
+        errorMessage,
+        getErrorDetails(error)
+      );
+      throw error;
+    }
+  },
+  updateLibro: async (id, updates) => {
+    set({ libroLoading: true, libroError: null });
+    
+    try {
+      const apiData: any = {};
+      if (updates.titulo) apiData.titulo = updates.titulo;
+      if (updates.autor) apiData.autor = updates.autor;
+      if (updates.isbn) apiData.isbn = updates.isbn;
+      if (updates.editorial) apiData.editorial = updates.editorial;
+      if (updates.fechaPublicacion) apiData.fecha_publicacion = updates.fechaPublicacion;
+      
+      const apiResponse = await businessApi.updateLibro(id, apiData);
+      const libro = mappers.libroResponseToLibro(apiResponse);
+      
+      set((state) => ({
+        libros: state.libros.map((l) =>
+          l.id === id ? libro : l
+        ),
+        libroLoading: false,
+        libroError: null,
+      }));
+      
       get().showSuccessNotification(
         'Libro actualizado',
-        `El libro "${updates.titulo || libro.titulo}" ha sido actualizado exitosamente`
+        `El libro "${libro.titulo}" ha sido actualizado exitosamente`
       );
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      set({
+        libroLoading: false,
+        libroError: errorMessage,
+      });
+      
+      get().showErrorNotification(
+        'Error al actualizar libro',
+        errorMessage,
+        getErrorDetails(error)
+      );
+      throw error;
     }
   },
   setLibroLoading: (libroLoading) => set({ libroLoading }),
@@ -524,42 +491,146 @@ export const useAppStore = create<AppState>((set, get) => ({
     return get().libros.find(l => l.id === id);
   },
   // Estante CRUD actions
-  addEstante: (newEstante) => {
-    set(state => ({
-      estantes: [...state.estantes, { ...newEstante, id: Math.max(0, ...state.estantes.map(e => e.id)) + 1 }]
-    }));
-    // Show success notification
-    get().showSuccessNotification(
-      'Estante agregado',
-      `El estante ${newEstante.nombre || 'nuevo'} ha sido agregado exitosamente`
-    );
-  },
-  removeEstante: (id) => {
-    const estante = get().estantes.find(e => e.id === id);
-    set(state => ({
-      estantes: state.estantes.filter(estante => estante.id !== id)
-    }));
-    // Show success notification
-    if (estante) {
-      get().showSuccessNotification(
-        'Estante eliminado',
-        `El estante ${estante.nombre} ha sido eliminado exitosamente`
+  loadEstantes: async (bibliotecaId?: number) => {
+    set({ estanteLoading: true, estanteError: null });
+    
+    try {
+      const apiResponse = await businessApi.getEstantes(bibliotecaId);
+      const estantes = apiResponse.map(mappers.estanteResponseToEstante);
+      
+      set({
+        estantes,
+        estanteLoading: false,
+        estanteError: null,
+      });
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      set({
+        estanteLoading: false,
+        estanteError: errorMessage,
+      });
+      
+      get().showErrorNotification(
+        'Error al cargar estantes',
+        errorMessage,
+        getErrorDetails(error)
       );
     }
   },
-  updateEstante: (id, updates) => {
-    const estante = get().estantes.find(e => e.id === id);
-    set(state => ({
-      estantes: state.estantes.map(estante => 
-        estante.id === id ? { ...estante, ...updates } : estante
-      )
-    }));
-    // Show success notification
-    if (estante) {
+  addEstante: async (newEstante) => {
+    set({ estanteLoading: true, estanteError: null });
+    
+    try {
+      // Necesitamos el biblioteca_id del usuario actual o seleccionado
+      const currentUser = get().currentUser;
+      const bibliotecaId = currentUser?.bibliotecaId || 1; // Default o manejar error
+      
+      const apiData = mappers.estanteToApiRequest(newEstante, bibliotecaId);
+      const apiResponse = await businessApi.createEstante(apiData);
+      const estante = mappers.estanteResponseToEstante(apiResponse);
+      
+      set(state => ({
+        estantes: [...state.estantes, estante],
+        estanteLoading: false,
+        estanteError: null,
+      }));
+      
+      get().showSuccessNotification(
+        'Estante agregado',
+        `El estante ${estante.nombre} ha sido agregado exitosamente`
+      );
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      set({
+        estanteLoading: false,
+        estanteError: errorMessage,
+      });
+      
+      get().showErrorNotification(
+        'Error al crear estante',
+        errorMessage,
+        getErrorDetails(error)
+      );
+      throw error;
+    }
+  },
+  removeEstante: async (id) => {
+    set({ estanteLoading: true, estanteError: null });
+    
+    try {
+      const estante = get().estantes.find(e => e.id === id);
+      await businessApi.deleteEstante(id);
+      
+      set(state => ({
+        estantes: state.estantes.filter(estante => estante.id !== id),
+        estanteLoading: false,
+        estanteError: null,
+      }));
+      
+      if (estante) {
+        get().showSuccessNotification(
+          'Estante eliminado',
+          `El estante ${estante.nombre} ha sido eliminado exitosamente`
+        );
+      }
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      set({
+        estanteLoading: false,
+        estanteError: errorMessage,
+      });
+      
+      get().showErrorNotification(
+        'Error al eliminar estante',
+        errorMessage,
+        getErrorDetails(error)
+      );
+      throw error;
+    }
+  },
+  updateEstante: async (id, updates) => {
+    set({ estanteLoading: true, estanteError: null });
+    
+    try {
+      const apiData: any = {};
+      if (updates.nombre) apiData.etiqueta = updates.nombre;
+      if (updates.ubicacion) apiData.ubicacion = updates.ubicacion;
+      if (updates.espaciosDisponibles !== undefined || updates.cantidadLibros !== undefined) {
+        const estante = get().estantes.find(e => e.id === id);
+        if (estante) {
+          apiData.capacidad = (updates.espaciosDisponibles ?? estante.espaciosDisponibles) + 
+                            (updates.cantidadLibros ?? estante.cantidadLibros);
+        }
+      }
+      
+      const apiResponse = await businessApi.updateEstante(id, apiData);
+      const estante = mappers.estanteResponseToEstante(apiResponse);
+      
+      set(state => ({
+        estantes: state.estantes.map(e => 
+          e.id === id ? estante : e
+        ),
+        estanteLoading: false,
+        estanteError: null,
+      }));
+      
       get().showSuccessNotification(
         'Estante actualizado',
-        `El estante ${updates.nombre || estante.nombre} ha sido actualizado exitosamente`
+        `El estante ${estante.nombre} ha sido actualizado exitosamente`
       );
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      set({
+        estanteLoading: false,
+        estanteError: errorMessage,
+      });
+      
+      get().showErrorNotification(
+        'Error al actualizar estante',
+        errorMessage,
+        getErrorDetails(error)
+      );
+      throw error;
     }
   },
   setEstanteLoading: (estanteLoading) => set({ estanteLoading }),
@@ -568,38 +639,136 @@ export const useAppStore = create<AppState>((set, get) => ({
     return get().estantes.find(e => e.id === id);
   },
   // Biblioteca CRUD actions
-  addBiblioteca: (newBiblioteca) => {
-    set((state) => ({
-      bibliotecas: [...state.bibliotecas, { ...newBiblioteca, id: Math.max(0, ...state.bibliotecas.map(b => b.id)) + 1 }]
-    }));
-    // Show success notification
-    get().showSuccessNotification(
-      'Biblioteca registrada',
-      `La biblioteca "${newBiblioteca.nombre}" ha sido registrada exitosamente.`
-    );
+  loadBibliotecas: async () => {
+    set({ bibliotecaLoading: true, bibliotecaError: null });
+    
+    try {
+      const apiResponse = await businessApi.getBibliotecas();
+      const bibliotecas = apiResponse.map(mappers.bibliotecaResponseToBiblioteca);
+      
+      set({
+        bibliotecas,
+        bibliotecaLoading: false,
+        bibliotecaError: null,
+      });
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      set({
+        bibliotecaLoading: false,
+        bibliotecaError: errorMessage,
+      });
+      
+      get().showErrorNotification(
+        'Error al cargar bibliotecas',
+        errorMessage,
+        getErrorDetails(error)
+      );
+    }
   },
-  removeBiblioteca: (id) => {
-    const biblioteca = get().getBibliotecaById(id);
-    set((state) => ({
-      bibliotecas: state.bibliotecas.filter(biblioteca => biblioteca.id !== id)
-    }));
-    // Show success notification
-    get().showSuccessNotification(
-      'Biblioteca eliminada',
-      `La biblioteca "${biblioteca?.nombre || 'Desconocida'}" ha sido eliminada exitosamente.`
-    );
+  addBiblioteca: async (newBiblioteca) => {
+    set({ bibliotecaLoading: true, bibliotecaError: null });
+    
+    try {
+      const apiData = mappers.bibliotecaToApiRequest(newBiblioteca);
+      const apiResponse = await businessApi.createBiblioteca(apiData);
+      const biblioteca = mappers.bibliotecaResponseToBiblioteca(apiResponse);
+      
+      set((state) => ({
+        bibliotecas: [...state.bibliotecas, biblioteca],
+        bibliotecaLoading: false,
+        bibliotecaError: null,
+      }));
+      
+      get().showSuccessNotification(
+        'Biblioteca registrada',
+        `La biblioteca "${biblioteca.nombre}" ha sido registrada exitosamente.`
+      );
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      set({
+        bibliotecaLoading: false,
+        bibliotecaError: errorMessage,
+      });
+      
+      get().showErrorNotification(
+        'Error al crear biblioteca',
+        errorMessage,
+        getErrorDetails(error)
+      );
+      throw error;
+    }
   },
-  updateBiblioteca: (id, updates) => {
-    set((state) => ({
-      bibliotecas: state.bibliotecas.map(biblioteca => 
-        biblioteca.id === id ? { ...biblioteca, ...updates } : biblioteca
-      )
-    }));
-    // Show success notification
-    get().showSuccessNotification(
-      'Biblioteca actualizada',
-      'La biblioteca ha sido actualizada exitosamente.'
-    );
+  removeBiblioteca: async (id) => {
+    set({ bibliotecaLoading: true, bibliotecaError: null });
+    
+    try {
+      const biblioteca = get().getBibliotecaById(id);
+      await businessApi.deleteBiblioteca(id);
+      
+      set((state) => ({
+        bibliotecas: state.bibliotecas.filter(biblioteca => biblioteca.id !== id),
+        bibliotecaLoading: false,
+        bibliotecaError: null,
+      }));
+      
+      get().showSuccessNotification(
+        'Biblioteca eliminada',
+        `La biblioteca "${biblioteca?.nombre || 'Desconocida'}" ha sido eliminada exitosamente.`
+      );
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      set({
+        bibliotecaLoading: false,
+        bibliotecaError: errorMessage,
+      });
+      
+      get().showErrorNotification(
+        'Error al eliminar biblioteca',
+        errorMessage,
+        getErrorDetails(error)
+      );
+      throw error;
+    }
+  },
+  updateBiblioteca: async (id, updates) => {
+    set({ bibliotecaLoading: true, bibliotecaError: null });
+    
+    try {
+      const apiData: any = {};
+      if (updates.nombre) apiData.nombre = updates.nombre;
+      if (updates.direccion) apiData.direccion = updates.direccion;
+      if (updates.telefono) apiData.telefono = updates.telefono;
+      if (updates.email) apiData.email = updates.email;
+      
+      const apiResponse = await businessApi.updateBiblioteca(id, apiData);
+      const biblioteca = mappers.bibliotecaResponseToBiblioteca(apiResponse);
+      
+      set((state) => ({
+        bibliotecas: state.bibliotecas.map(b => 
+          b.id === id ? biblioteca : b
+        ),
+        bibliotecaLoading: false,
+        bibliotecaError: null,
+      }));
+      
+      get().showSuccessNotification(
+        'Biblioteca actualizada',
+        'La biblioteca ha sido actualizada exitosamente.'
+      );
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      set({
+        bibliotecaLoading: false,
+        bibliotecaError: errorMessage,
+      });
+      
+      get().showErrorNotification(
+        'Error al actualizar biblioteca',
+        errorMessage,
+        getErrorDetails(error)
+      );
+      throw error;
+    }
   },
   setBibliotecaLoading: (bibliotecaLoading) => set({ bibliotecaLoading }),
   setBibliotecaError: (bibliotecaError) => set({ bibliotecaError }),

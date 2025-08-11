@@ -182,7 +182,7 @@ const NotificationDialog: React.FC<NotificationDialogProps> = ({
                     opacity: 0.8,
                   }}
                 >
-                  <strong>{field}:</strong> {error}
+                  <strong>{field}:</strong> {Array.isArray(error) ? error.join(', ') : String(error)}
                 </Typography>
               ))}
             </Box>
