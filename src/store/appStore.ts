@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { NotificationData } from '../components/NotificationDialog';
 import type { Bibliotecario, Libro, Estante, Biblioteca, Administrador } from '../types';
+import { authApi, getErrorMessage, getErrorDetails } from '../services/api';
 
 // Roles constants
 export const ROLES = {
@@ -40,6 +41,13 @@ export interface AuthUser {
   email: string;
   roleId: number; // 3 = Administrador, 4 = Super Administrador
   roleName: string;
+  bibliotecaId?: number;
+}
+
+export interface TempAuthData {
+  userId: number;
+  tempToken?: string;
+  user: AuthUser;
 }
 
 export interface RegisterData {
@@ -83,7 +91,7 @@ interface AppState {
   // Auth state
   isAuthenticated: boolean;
   currentUser: AuthUser | null;
-  pendingUser: AuthUser | null; // User data stored during 2FA process
+  tempAuthData: TempAuthData | null; // Data stored during 2FA process
   authLoading: boolean;
   authError: string | null;
   shouldRedirectTo2FA: boolean; // New flag for 2FA redirection
@@ -334,10 +342,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   ],
   bibliotecaLoading: false,
   bibliotecaError: null,
-  // Auth state
+    // Auth state
   isAuthenticated: false,
   currentUser: null,
-  pendingUser: null,
+  tempAuthData: null, // Data stored during 2FA process
   authLoading: false,
   authError: null,
   shouldRedirectTo2FA: false,
@@ -602,99 +610,120 @@ export const useAppStore = create<AppState>((set, get) => ({
   login: async (email: string, password: string) => {
     set({ authLoading: true, authError: null });
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Demo authentication with different roles
-    let userRole: { roleId: number; roleName: string } | null = null;
-    
-    if (email === 'admin@booksmart.com' && password === 'password') {
-      userRole = { roleId: ROLES.ADMIN, roleName: ROLE_NAMES[3] };
-    } else if (email === 'superadmin@booksmart.com' && password === 'password') {
-      userRole = { roleId: ROLES.SUPER_ADMIN, roleName: ROLE_NAMES[4] };
-    }
-    
-    if (userRole) {
-      // Instead of authenticating immediately, redirect to 2FA
-      set({
-        authLoading: false,
-        authError: null,
-        shouldRedirectTo2FA: true,
-        // Store user data temporarily for after 2FA verification
-        pendingUser: {
-          id: 1,
-          name: userRole.roleName,
+    try {
+      const response = await authApi.login(email, password);
+      
+      if (response.requires_2fa) {
+        // 2FA es requerido - redirigir a página de verificación
+        const userData: AuthUser = {
+          id: response.user_id!,
+          name: response.user?.nombre || '',
           email: email,
-          roleId: userRole.roleId,
-          roleName: userRole.roleName,
-        },
-      });
-      // Show info notification about 2FA
-      get().showSuccessNotification(
-        'Credenciales correctas',
-        'Redirigiendo a verificación de dos factores...'
-      );
-    } else {
+          roleId: response.user?.rol === 'Administrador' ? ROLES.ADMIN : ROLES.SUPER_ADMIN,
+          roleName: response.user?.rol || 'Administrador',
+          bibliotecaId: response.user?.bibliotecaId,
+        };
+
+        set({
+          authLoading: false,
+          authError: null,
+          shouldRedirectTo2FA: true,
+          tempAuthData: {
+            userId: response.user_id!,
+            tempToken: response.temp_token,
+            user: userData,
+          },
+        });
+
+        get().showSuccessNotification(
+          'Credenciales correctas',
+          'Se ha enviado un código de verificación a tu correo electrónico'
+        );
+      } else {
+        // Login directo (usuarios sin 2FA)
+        const userData: AuthUser = {
+          id: response.user!.id,
+          name: response.user!.nombre,
+          email: response.user!.correo,
+          roleId: response.user!.rol === 'Administrador' ? ROLES.ADMIN : ROLES.SUPER_ADMIN,
+          roleName: response.user!.rol,
+          bibliotecaId: response.user?.bibliotecaId,
+        };
+
+        set({
+          isAuthenticated: true,
+          currentUser: userData,
+          authLoading: false,
+          authError: null,
+        });
+
+        get().showSuccessNotification(
+          'Inicio de sesión exitoso',
+          `¡Bienvenido de vuelta, ${userData.name}!`
+        );
+      }
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      const errorDetails = getErrorDetails(error);
+      
       set({
         authLoading: false,
-        authError: 'Credenciales incorrectas. Usa admin@booksmart.com o superadmin@booksmart.com con password',
+        authError: errorMessage,
       });
-      // Show error notification
+
       get().showErrorNotification(
         'Error de autenticación',
-        'Credenciales incorrectas',
-        { 
-          admin: 'admin@booksmart.com / password',
-          superadmin: 'superadmin@booksmart.com / password'
-        }
+        errorMessage,
+        errorDetails
       );
     }
   },
   verifyTwoFactor: async (data: { codigo: string }) => {
     set({ authLoading: true, authError: null });
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // For demo purposes, accept any code with minimum 16 alphanumeric characters
-    if (data.codigo.length >= 16 && /^[A-Za-z0-9]{16,}$/.test(data.codigo)) {
-      const pendingUser = get().pendingUser;
+    try {
+      const tempData = get().tempAuthData;
       
-      if (pendingUser) {
-        set({
-          isAuthenticated: true,
-          currentUser: pendingUser,
-          pendingUser: null, // Clear pending user
-          authLoading: false,
-          authError: null,
-        });
-        
-        // Show success notification
-        get().showSuccessNotification(
-          'Inicio de sesión exitoso',
-          `¡Bienvenido de vuelta, ${pendingUser.roleName}!`
-        );
-        
-        // Note: Navigation should be handled by the component using useNavigate
-      } else {
-        set({
-          authLoading: false,
-          authError: 'Sesión expirada. Por favor, inicia sesión nuevamente.',
-        });
+      if (!tempData) {
+        throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
       }
-    } else {
+
+      const response = await authApi.verifyTwoFactor(data.codigo, tempData.userId);
+      
+      const userData: AuthUser = {
+        id: response.user.id,
+        name: response.user.nombre,
+        email: response.user.correo,
+        roleId: response.user.rol === 'Administrador' ? ROLES.ADMIN : ROLES.SUPER_ADMIN,
+        roleName: response.user.rol,
+        bibliotecaId: response.user.bibliotecaId,
+      };
+
+      set({
+        isAuthenticated: true,
+        currentUser: userData,
+        tempAuthData: null, // Clear temp data
+        authLoading: false,
+        authError: null,
+      });
+
+      get().showSuccessNotification(
+        'Verificación exitosa',
+        `¡Bienvenido de vuelta, ${userData.name}!`
+      );
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      const errorDetails = getErrorDetails(error);
+      
       set({
         authLoading: false,
-        authError: 'Código de verificación inválido. Debe tener mínimo 16 caracteres alfanuméricos.',
+        authError: errorMessage,
       });
-      // Show error notification
+
       get().showErrorNotification(
         'Error de verificación',
-        'Código de verificación inválido',
-        { 
-          formato: 'Debe ser alfanumérico de mínimo 16 caracteres',
-          ejemplo: 'ABC123DEF456GHI789'
-        }
+        errorMessage,
+        errorDetails
       );
     }
   },
@@ -702,56 +731,49 @@ export const useAppStore = create<AppState>((set, get) => ({
     console.log('🏪 Store: register called with data:', data);
     set({ authLoading: true, authError: null });
     
-    // Simulate API call
-    console.log('⏳ Store: Simulating API call...');
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Check if email already exists (simple validation)
-    const existingUser = get().users.find(user => user.email === data.email);
-    if (existingUser) {
-      console.log('❌ Store: Email already exists');
+    try {
+      console.log('⏳ Store: Calling API...');
+      const response = await authApi.registerAdmin({
+        nombre: data.firstName,
+        apellido: data.lastName,
+        correo: data.email,
+        contraseña: data.password,
+        curp: data.curp,
+        rfc: data.rfc,
+      });
+
+      console.log('✅ Store: Registration API response:', response);
+      
       set({
         authLoading: false,
-        authError: 'Este correo electrónico ya está registrado',
+        authError: null,
       });
-      // Show error notification
+
+      get().showSuccessNotification(
+        'Registro exitoso',
+        'Tu cuenta ha sido creada. Revisa tu correo para confirmar tu email.',
+        'Continuar'
+      );
+
+      console.log('✅ Store: Registration completed successfully');
+    } catch (error) {
+      console.log('❌ Store: Registration error:', error);
+      const errorMessage = getErrorMessage(error);
+      const errorDetails = getErrorDetails(error);
+      
+      set({
+        authLoading: false,
+        authError: errorMessage,
+      });
+
       get().showErrorNotification(
         'Error en el registro',
-        'Este correo electrónico ya está registrado',
-        { email: 'Ya existe una cuenta con este correo' }
+        errorMessage,
+        errorDetails
       );
-      throw new Error('Este correo electrónico ya está registrado');
+
+      throw error;
     }
-    
-    // Create new user but DON'T authenticate yet
-    // User needs to confirm email first
-    const newUser = {
-      id: Date.now(),
-      name: `${data.firstName} ${data.lastName}`,
-      email: data.email,
-      age: 25, // Default age for demo
-    };
-    
-    console.log('✅ Store: User created successfully:', newUser);
-    
-    // Add to users list but keep user NOT authenticated
-    set((state) => ({
-      users: [...state.users, newUser],
-      authLoading: false,
-      authError: null,
-      // Don't set isAuthenticated: true here
-      // User will be authenticated after email confirmation
-    }));
-    
-    // Show success notification
-    get().showSuccessNotification(
-      'Registro exitoso',
-      'Tu cuenta ha sido creada. Revisa tu correo para confirmar tu email.',
-      'Continuar'
-    );
-    
-    console.log('✅ Store: Registration completed successfully');
-    // Success - will trigger navigation to email confirmation
   },
   confirmEmail: async (email: string) => {
     set({ authLoading: true, authError: null });
@@ -795,13 +817,25 @@ export const useAppStore = create<AppState>((set, get) => ({
       throw new Error('Usuario no encontrado');
     }
   },
-  logout: () => 
+  logout: () => {
+    // Llamar a la API de logout
+    authApi.logout().catch(() => {
+      // Ignorar errores de logout de la API
+      console.log('Error al cerrar sesión en el servidor, pero limpiando estado local');
+    });
+
     set({
       isAuthenticated: false,
       currentUser: null,
-      pendingUser: null, // Clear pending user on logout
+      tempAuthData: null, // Clear temp data
       authError: null,
-    }),
+    });
+
+    get().showSuccessNotification(
+      'Sesión cerrada',
+      'Has cerrado sesión exitosamente'
+    );
+  },
   changePassword: async (_currentPassword: string, _newPassword: string) => {
     set({ authLoading: true, authError: null });
     

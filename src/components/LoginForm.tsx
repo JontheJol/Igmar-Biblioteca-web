@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import * as yup from 'yup';
 import {
   Box,
   TextField,
@@ -15,28 +14,13 @@ import {
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-
-interface LoginFormData {
-  email: string;
-  password: string;
-}
+import { loginSchema, type LoginFormData } from '../utils/validation';
 
 interface LoginFormProps {
   onLogin: (email: string, password: string) => Promise<void>;
   loading: boolean;
   error: string | null;
 }
-
-const schema = yup.object({
-  email: yup
-    .string()
-    .email('Ingresa un correo electrónico válido')
-    .required('El correo electrónico es requerido'),
-  password: yup
-    .string()
-    .min(6, 'La contraseña debe tener al menos 6 caracteres')
-    .required('La contraseña es requerida'),
-});
 
 const LoginForm: React.FC<LoginFormProps> = ({
   onLogin,
@@ -51,7 +35,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
     handleSubmit,
     formState: { errors },
   } = useForm<LoginFormData>({
-    resolver: yupResolver(schema),
+    resolver: yupResolver(loginSchema),
     defaultValues: {
       email: '',
       password: '',
@@ -60,6 +44,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
 
   const onSubmit = async (data: LoginFormData) => {
     try {
+      // Mapear los campos del formulario a lo que espera la API
       await onLogin(data.email, data.password);
       navigate('/'); // Navigate to home on successful login
     } catch (err) {
@@ -106,108 +91,90 @@ const LoginForm: React.FC<LoginFormProps> = ({
         </Alert>
       )}
 
-      {/* Email Field */}
-      <Box>
-        <Typography
-          variant="subtitle1"
-          sx={{
-            fontFamily: 'League Spartan, sans-serif',
-            fontWeight: 400,
-            fontSize: '24px',
-            color: '#4b453d',
-            mb: 1,
-          }}
-        >
-          Correo electrónico
-        </Typography>
-        <Controller
-          name="email"
-          control={control}
-          render={({ field }) => (
-            <TextField
-              {...field}
-              fullWidth
-              type="email"
-              error={!!errors.email}
-              helperText={errors.email?.message}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  backgroundColor: '#ffffff',
-                  borderRadius: '10px',
-                  height: '48px',
-                  '& fieldset': {
-                    borderColor: 'rgba(69, 55, 38, 0.15)',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: 'rgba(69, 55, 38, 0.3)',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#453726',
-                  },
+      {/* Email Input */}
+      <Controller
+        name="email"
+        control={control}
+        render={({ field }) => (
+          <TextField
+            {...field}
+            label="Correo electrónico"
+            type="email"
+            fullWidth
+            variant="outlined"
+            error={!!errors.email}
+            helperText={errors.email?.message}
+            placeholder="ejemplo@correo.com"
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                backgroundColor: '#ffffff',
+                '&:hover fieldset': {
+                  borderColor: '#4a5568',
                 },
-              }}
-            />
-          )}
-        />
-      </Box>
+                '&.Mui-focused fieldset': {
+                  borderColor: '#2d3748',
+                },
+              },
+            }}
+          />
+        )}
+      />
 
-      {/* Password Field */}
-      <Box>
-        <Typography
-          variant="subtitle1"
-          sx={{
-            fontFamily: 'League Spartan, sans-serif',
-            fontWeight: 400,
-            fontSize: '24px',
-            color: '#4b453d',
-            mb: 1,
+      {/* Password Input */}
+      <Controller
+        name="password"
+        control={control}
+        render={({ field }) => (
+          <TextField
+            {...field}
+            label="Contraseña"
+            type={showPassword ? 'text' : 'password'}
+            fullWidth
+            variant="outlined"
+            error={!!errors.password}
+            helperText={errors.password?.message}
+            placeholder="Ingresa tu contraseña"
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    aria-label="toggle password visibility"
+                    onClick={handleTogglePasswordVisibility}
+                    edge="end"
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                backgroundColor: '#ffffff',
+                '&:hover fieldset': {
+                  borderColor: '#4a5568',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#2d3748',
+                },
+              },
+            }}
+          />
+        )}
+      />
+
+      {/* Error Alert */}
+      {error && (
+        <Alert 
+          severity="error" 
+          sx={{ 
+            backgroundColor: '#fef2f2',
+            borderColor: '#f87171',
+            color: '#b91c1c',
           }}
         >
-          Contraseña
-        </Typography>
-        <Controller
-          name="password"
-          control={control}
-          render={({ field }) => (
-            <TextField
-              {...field}
-              fullWidth
-              type={showPassword ? 'text' : 'password'}
-              error={!!errors.password}
-              helperText={errors.password?.message}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={handleTogglePasswordVisibility}
-                      edge="end"
-                      sx={{ color: '#453726' }}
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  backgroundColor: '#ffffff',
-                  borderRadius: '10px',
-                  height: '48px',
-                  '& fieldset': {
-                    borderColor: 'rgba(69, 55, 38, 0.15)',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: 'rgba(69, 55, 38, 0.3)',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#453726',
-                  },
-                },
-              }}
-            />
-          )}
-        />
-      </Box>
+          {error}
+        </Alert>
+      )}
 
       {/* Register Link */}
       <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>

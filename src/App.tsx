@@ -28,6 +28,8 @@ import AgregarBibliotecario from './pages/AgregarBibliotecario';
 import EditarBibliotecario from './pages/EditarBibliotecario';
 import NuevoLibroISBN from './pages/NuevoLibroISBN';
 import NuevoLibroFormulario from './pages/NuevoLibroFormulario';
+import { useAuthInitialization, useTokenRefresh } from './hooks/useAuth';
+import './utils/diagnostic'; // Importar utilidades de diagnóstico
 import CambiarContrasena from './pages/CambiarContrasena';
 // import NuevoLibroPosicion from './pages/NuevoLibroPosicion';
 import { useAppStore } from './store/appStore';
@@ -117,6 +119,12 @@ const theme = createTheme({
 
 function App() {
   const { notification, showNotification, hideNotification } = useAppStore();
+
+  // Inicializar autenticación al cargar la app
+  useAuthInitialization();
+  
+  // Configurar renovación automática de tokens
+  useTokenRefresh();
 
   return (
     <ThemeProvider theme={theme}>

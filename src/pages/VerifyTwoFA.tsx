@@ -20,18 +20,28 @@ import NotificationDialog from '../components/NotificationDialog';
 const VerifyTwoFA: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { authError, setAuthError, verifyTwoFactor, authLoading, notification, isAuthenticated, hideNotification, pendingUser, currentUser } = useAppStore();
+  const { 
+    authError, 
+    setAuthError, 
+    verifyTwoFactor, 
+    authLoading, 
+    notification, 
+    isAuthenticated, 
+    hideNotification, 
+    tempAuthData, 
+    currentUser 
+  } = useAppStore();
   const [verificationCode, setVerificationCode] = useState('');
 
-  // Get email from pendingUser or navigation state or default message
-  const userEmail = pendingUser?.email || location.state?.email || 'tu correo electrónico';
+  // Get email from tempAuthData or navigation state or default message
+  const userEmail = tempAuthData?.user.email || location.state?.email || 'tu correo electrónico';
 
-  // Redirect back to login if no pending user
+  // Redirect back to login if no temp auth data
   useEffect(() => {
-    if (!pendingUser && !isAuthenticated) {
+    if (!tempAuthData && !isAuthenticated) {
       navigate('/login');
     }
-  }, [pendingUser, isAuthenticated, navigate]);
+  }, [tempAuthData, isAuthenticated, navigate]);
 
   // Auto-navigate when user becomes authenticated after 2FA verification
   useEffect(() => {
@@ -75,7 +85,7 @@ const VerifyTwoFA: React.FC = () => {
   };
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/[^A-Za-z0-9]/g, ''); // Only alphanumeric characters
+    const value = e.target.value.replace(/[^A-Za-z0-9$@!%*?&]/g, '').slice(0, 8); // Solo caracteres permitidos, máximo 8
     setVerificationCode(value);
     // Clear any existing errors when user starts typing
     if (authError) {
@@ -189,7 +199,7 @@ const VerifyTwoFA: React.FC = () => {
             <TextField
               value={verificationCode}
               onChange={handleCodeChange}
-              placeholder="Código alfanumérico"
+              placeholder="Ej: Abc123$!"
               inputProps={{
                 style: {
                   textAlign: 'center',
@@ -198,6 +208,7 @@ const VerifyTwoFA: React.FC = () => {
                   fontWeight: 'bold',
                   color: '#453726',
                 },
+                maxLength: 8,
               }}
               sx={{
                 width: 306, // Matching Figma width

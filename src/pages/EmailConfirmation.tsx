@@ -68,7 +68,7 @@ const EmailConfirmation: React.FC = () => {
   };
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/[^A-Za-z0-9]/g, ''); // Only alphanumeric characters
+    const value = e.target.value.replace(/[^A-Za-z0-9$@!%*?&]/g, '').slice(0, 8); // Solo caracteres permitidos, máximo 8
     setVerificationCode(value);
     // Clear any existing errors when user starts typing
     if (authError) {
@@ -182,7 +182,7 @@ const EmailConfirmation: React.FC = () => {
             <TextField
               value={verificationCode}
               onChange={handleCodeChange}
-              placeholder="Código alfanumérico"
+              placeholder="Ej: Ab1$Cd2!"
               inputProps={{
                 style: {
                   textAlign: 'center',
@@ -191,6 +191,7 @@ const EmailConfirmation: React.FC = () => {
                   fontWeight: 'bold',
                   color: '#453726',
                 },
+                maxLength: 8,
               }}
               sx={{
                 width: 306, // Matching Figma width

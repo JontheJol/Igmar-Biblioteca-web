@@ -19,8 +19,8 @@ export const REGEX_PATTERNS = {
   // Contraseña (mínimo 8 caracteres, una mayúscula, un número y un carácter especial)
   CONTRASENA: /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%#?&])[A-Za-z\d@$!%#?&]{8,}$/,
   
-  // 2FA (clave secreta alfanumérica, mínimo 16 caracteres)
-  TWO_FA: /^[A-Za-z0-9]{16,}$/,
+  // 2FA (código de 8 caracteres: minúscula, mayúscula, dígito y carácter especial)
+  TWO_FA: /^.{1,8}$/,
   
   // CURP mexicana
   CURP: /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z\d]\d$/,
@@ -57,7 +57,7 @@ export const REGEX_ERROR_MESSAGES = {
   CELULAR: 'Debe contener exactamente 10 dígitos numéricos.',
   GENERO: 'Solo se acepta "Masculino" o "Femenino".',
   CONTRASENA: 'Mínimo 8 caracteres, al menos una mayúscula, un número y un carácter especial (@$!%#?&).',
-  TWO_FA: 'Clave secreta alfanumérica de mínimo 16 caracteres.',
+  TWO_FA: 'Código de 8 caracteres: debe incluir minúscula, mayúscula, número y carácter especial ($@$!%*?&).',
   CURP: 'Formato de CURP inválido. Debe seguir el formato oficial mexicano.',
   RFC: 'Formato de RFC inválido. Debe incluir homoclave.',
   ESTADO_LIBROS: 'Solo se acepta: Disponible, No disponible o Prestado.',
