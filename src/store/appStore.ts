@@ -2,7 +2,15 @@ import { create } from 'zustand';
 import type { NotificationData } from '../components/NotificationDialog';
 import type { Bibliotecario, Libro, Estante, Biblioteca, Administrador } from '../types';
 import { authApi, getErrorMessage, getErrorDetails } from '../services/api';
-import { businessApi, mappers } from '../services/businessApi';
+import { 
+  bibliotecaApi, 
+  libroApi,
+  type SeccionResponse
+} from '../services/businessApiUpdated';
+import { businessApi } from '../services/businessApi';
+import { estanteService } from '../services/estanteService';
+import { seccionService, type SeccionFormData } from '../services/seccionService';
+import { mappers } from '../services/mappers';
 
 // Roles constants
 export const ROLES = {
@@ -85,6 +93,10 @@ interface AppState {
   estantes: Estante[];
   estanteLoading: boolean;
   estanteError: string | null;
+  // Secciones state
+  secciones: SeccionResponse[];
+  seccionLoading: boolean;
+  seccionError: string | null;
   // Bibliotecas state
   bibliotecas: Biblioteca[];
   bibliotecaLoading: boolean;
@@ -131,6 +143,14 @@ interface AppState {
   setEstanteLoading: (loading: boolean) => void;
   setEstanteError: (error: string | null) => void;
   getEstanteById: (id: number) => Estante | undefined;
+  // Secciones CRUD actions
+  loadSecciones: (estanteId: number) => Promise<void>;
+  updateSeccion: (seccionId: number, updates: SeccionFormData) => Promise<void>;
+  setSeccionLoading: (loading: boolean) => void;
+  setSeccionError: (error: string | null) => void;
+  getSeccionById: (id: number) => SeccionResponse | undefined;
+  obtenerEtiquetasUnicas: (estanteId: number) => Promise<string[]>;
+  generarMapaPosiciones: (estanteId: number) => Promise<{ [key: string]: SeccionResponse } | null>;
   // Biblioteca CRUD actions
   loadBibliotecas: () => Promise<void>;
   addBiblioteca: (biblioteca: Omit<Biblioteca, 'id'>) => Promise<void>;
@@ -201,9 +221,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   libroLoading: false,
   libroError: null,
   // Estantes state
-  estantes: [],
+  estantes: [], // Iniciar vacío, se carga desde la API
   estanteLoading: false,
   estanteError: null,
+  // Secciones state
+  secciones: [], // Iniciar vacío, se carga desde la API
+  seccionLoading: false,
+  seccionError: null,
   // Bibliotecas state
   bibliotecas: [],
   bibliotecaLoading: false,
@@ -351,7 +375,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     
     try {
       const params = bibliotecaId ? { biblioteca_id: bibliotecaId } : undefined;
-      const apiResponse = await businessApi.getLibros(params);
+      const apiResponse = await libroApi.listar(params);
       const libros = apiResponse.map(mappers.libroResponseToLibro);
       
       set({
@@ -382,8 +406,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       const bibliotecaId = currentUser?.bibliotecaId || 1; // Default o manejar error
       
       const apiData = mappers.libroToApiRequest(libro, bibliotecaId);
-      const apiResponse = await businessApi.createLibro(apiData);
-      const newLibro = mappers.libroResponseToLibro(apiResponse.libro);
+      const apiResponse = await libroApi.crear(apiData);
+      const newLibro = mappers.libroResponseToLibro(apiResponse);
       
       set((state) => ({
         libros: [...state.libros, newLibro],
@@ -415,7 +439,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     
     try {
       const libro = get().libros.find(l => l.id === id);
-      await businessApi.deleteLibro(id);
+      await libroApi.eliminar(id);
       
       set((state) => ({
         libros: state.libros.filter((l) => l.id !== id),
@@ -449,13 +473,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     
     try {
       const apiData: any = {};
-      if (updates.titulo) apiData.titulo = updates.titulo;
+      if (updates.titulo) apiData.nombre = updates.titulo; // Mapear titulo a nombre
       if (updates.autor) apiData.autor = updates.autor;
       if (updates.isbn) apiData.isbn = updates.isbn;
-      if (updates.editorial) apiData.editorial = updates.editorial;
-      if (updates.fechaPublicacion) apiData.fecha_publicacion = updates.fechaPublicacion;
+      if (updates.descripcion) apiData.descripcion = updates.descripcion;
       
-      const apiResponse = await businessApi.updateLibro(id, apiData);
+      const apiResponse = await libroApi.actualizar(id, apiData);
       const libro = mappers.libroResponseToLibro(apiResponse);
       
       set((state) => ({
@@ -491,28 +514,54 @@ export const useAppStore = create<AppState>((set, get) => ({
     return get().libros.find(l => l.id === id);
   },
   // Estante CRUD actions
-  loadEstantes: async (bibliotecaId?: number) => {
+  loadEstantes: async (_bibliotecaId?: number) => {
     set({ estanteLoading: true, estanteError: null });
     
     try {
-      const apiResponse = await businessApi.getEstantes(bibliotecaId);
-      const estantes = apiResponse.map(mappers.estanteResponseToEstante);
+      console.log('Intentando cargar estantes desde API...');
+      const result = await estanteService.listar();
       
-      set({
-        estantes,
-        estanteLoading: false,
-        estanteError: null,
-      });
+      if (result.success && result.data) {
+        console.log('Respuesta de API estantes:', result.data);
+        const estantes = result.data.map(mappers.estanteResponseToEstante);
+        console.log('Estantes mapeados:', estantes);
+        
+        set({
+          estantes,
+          estanteLoading: false,
+          estanteError: null,
+        });
+        
+        get().showSuccessNotification(
+          'Estantes cargados',
+          `Se cargaron ${estantes.length} estantes desde la API`
+        );
+      } else {
+        throw new Error(result.error || 'Error al cargar estantes');
+      }
     } catch (error) {
       const errorMessage = getErrorMessage(error);
+      console.warn('Error al cargar estantes desde API, usando datos mockeados:', errorMessage);
+      
+      // Usar datos mockeados como fallback
+      const estantesMockeados = [
+        { id: 1, nombre: 'Estante A1', ubicacion: 'Planta Baja', fila: 'A', columna: '1', cantidadLibros: 15, espaciosDisponibles: 5 },
+        { id: 2, nombre: 'Estante A2', ubicacion: 'Planta Baja', fila: 'A', columna: '2', cantidadLibros: 20, espaciosDisponibles: 0 },
+        { id: 3, nombre: 'Estante B1', ubicacion: 'Primer Piso', fila: 'B', columna: '1', cantidadLibros: 12, espaciosDisponibles: 8 },
+        { id: 4, nombre: 'Estante B2', ubicacion: 'Primer Piso', fila: 'B', columna: '2', cantidadLibros: 18, espaciosDisponibles: 2 },
+        { id: 5, nombre: 'Estante C1', ubicacion: 'Segundo Piso', fila: 'C', columna: '1', cantidadLibros: 10, espaciosDisponibles: 10 },
+        { id: 6, nombre: 'Estante C2', ubicacion: 'Segundo Piso', fila: 'C', columna: '2', cantidadLibros: 16, espaciosDisponibles: 4 },
+      ];
+      
       set({
+        estantes: estantesMockeados,
         estanteLoading: false,
-        estanteError: errorMessage,
+        estanteError: null, // No mostrar error si tenemos datos de fallback
       });
       
       get().showErrorNotification(
         'Error al cargar estantes',
-        errorMessage,
+        'Se usaron datos de ejemplo debido a un error de conexión',
         getErrorDetails(error)
       );
     }
@@ -521,24 +570,46 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ estanteLoading: true, estanteError: null });
     
     try {
-      // Necesitamos el biblioteca_id del usuario actual o seleccionado
+      // Verificar usuario actual
       const currentUser = get().currentUser;
-      const bibliotecaId = currentUser?.bibliotecaId || 1; // Default o manejar error
       
-      const apiData = mappers.estanteToApiRequest(newEstante, bibliotecaId);
-      const apiResponse = await businessApi.createEstante(apiData);
-      const estante = mappers.estanteResponseToEstante(apiResponse);
+      if (!currentUser) {
+        throw new Error('Usuario no autenticado');
+      }
       
-      set(state => ({
-        estantes: [...state.estantes, estante],
-        estanteLoading: false,
-        estanteError: null,
-      }));
+      if ((currentUser.roleId || 0) < 3) {
+        throw new Error(`Permisos insuficientes. Necesitas rol 3 o superior, tienes rol ${currentUser.roleId || 0}`);
+      }
       
-      get().showSuccessNotification(
-        'Estante agregado',
-        `El estante ${estante.nombre} ha sido agregado exitosamente`
-      );
+      console.log('Debug - Usuario actual:', currentUser);
+      
+      const datosEstante = {
+        etiqueta: newEstante.nombre || newEstante.ubicacion || '',
+        cant_columnas: typeof newEstante.columna === 'string' ? parseInt(newEstante.columna) : newEstante.columna,
+        cant_filas: typeof newEstante.fila === 'string' ? parseInt(newEstante.fila) : newEstante.fila,
+        // NO enviamos biblioteca_id - se asignará automáticamente en el backend
+      };
+      
+      console.log('Debug - Datos del estante a enviar:', datosEstante);
+      
+      const result = await estanteService.crear(datosEstante);
+      
+      if (result.success && result.data) {
+        const estante = mappers.estanteResponseToEstante(result.data);
+        
+        set(state => ({
+          estantes: [...state.estantes, estante],
+          estanteLoading: false,
+          estanteError: null,
+        }));
+        
+        get().showSuccessNotification(
+          'Estante agregado',
+          result.message || `El estante ${estante.nombre} ha sido agregado exitosamente`
+        );
+      } else {
+        throw new Error(result.error || 'Error al crear estante');
+      }
     } catch (error) {
       const errorMessage = getErrorMessage(error);
       set({
@@ -559,19 +630,23 @@ export const useAppStore = create<AppState>((set, get) => ({
     
     try {
       const estante = get().estantes.find(e => e.id === id);
-      await businessApi.deleteEstante(id);
+      const result = await estanteService.eliminar(id);
       
-      set(state => ({
-        estantes: state.estantes.filter(estante => estante.id !== id),
-        estanteLoading: false,
-        estanteError: null,
-      }));
-      
-      if (estante) {
-        get().showSuccessNotification(
-          'Estante eliminado',
-          `El estante ${estante.nombre} ha sido eliminado exitosamente`
-        );
+      if (result.success) {
+        set(state => ({
+          estantes: state.estantes.filter(estante => estante.id !== id),
+          estanteLoading: false,
+          estanteError: null,
+        }));
+        
+        if (estante) {
+          get().showSuccessNotification(
+            'Estante eliminado',
+            result.message || `El estante ${estante.nombre} ha sido eliminado exitosamente`
+          );
+        }
+      } else {
+        throw new Error(result.error || 'Error al eliminar estante');
       }
     } catch (error) {
       const errorMessage = getErrorMessage(error);
@@ -589,36 +664,70 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
   updateEstante: async (id, updates) => {
+    console.log('updateEstante iniciado para ID:', id);
+    console.log('Updates recibidos:', updates);
+    
     set({ estanteLoading: true, estanteError: null });
     
     try {
-      const apiData: any = {};
-      if (updates.nombre) apiData.etiqueta = updates.nombre;
-      if (updates.ubicacion) apiData.ubicacion = updates.ubicacion;
-      if (updates.espaciosDisponibles !== undefined || updates.cantidadLibros !== undefined) {
-        const estante = get().estantes.find(e => e.id === id);
-        if (estante) {
-          apiData.capacidad = (updates.espaciosDisponibles ?? estante.espaciosDisponibles) + 
-                            (updates.cantidadLibros ?? estante.cantidadLibros);
+      const datosActualizacion = {
+        etiqueta: updates.nombre || updates.ubicacion,
+        cant_columnas: typeof updates.columna === 'string' ? parseInt(updates.columna) : updates.columna,
+        cant_filas: typeof updates.fila === 'string' ? parseInt(updates.fila) : updates.fila,
+        // Compatibilidad con el frontend
+        nombre: updates.nombre,
+        ubicacion: updates.ubicacion,
+        fila: updates.fila,
+        columna: updates.columna
+      };
+      
+      console.log('Datos de actualización preparados:', datosActualizacion);
+      
+      const result = await estanteService.actualizar(id, datosActualizacion);
+      console.log('Resultado del servicio estante:', result);
+      
+      if (result.success) {
+        // Si el servicio devuelve datos, usarlos; si no, usar los datos de actualización
+        let estanteActualizado;
+        
+        if (result.data) {
+          estanteActualizado = mappers.estanteResponseToEstante(result.data);
+        } else {
+          // Crear el estante actualizado basado en los datos actuales y las actualizaciones
+          const estanteExistente = get().estantes.find(e => e.id === id);
+          if (!estanteExistente) {
+            throw new Error('Estante no encontrado para actualizar');
+          }
+          
+          estanteActualizado = {
+            ...estanteExistente,
+            nombre: updates.nombre || updates.ubicacion || estanteExistente.nombre,
+            ubicacion: updates.ubicacion || estanteExistente.ubicacion,
+            fila: updates.fila || estanteExistente.fila,
+            columna: updates.columna || estanteExistente.columna,
+          };
         }
+        
+        console.log('Estante actualizado:', estanteActualizado);
+        
+        set(state => ({
+          estantes: state.estantes.map(e => 
+            e.id === id ? estanteActualizado : e
+          ),
+          estanteLoading: false,
+          estanteError: null,
+        }));
+        
+        get().showSuccessNotification(
+          'Estante actualizado',
+          result.message || `El estante ${estanteActualizado.nombre} ha sido actualizado exitosamente`
+        );
+      } else {
+        console.error('Error en resultado del servicio:', result.error);
+        throw new Error(result.error || 'Error al actualizar estante');
       }
-      
-      const apiResponse = await businessApi.updateEstante(id, apiData);
-      const estante = mappers.estanteResponseToEstante(apiResponse);
-      
-      set(state => ({
-        estantes: state.estantes.map(e => 
-          e.id === id ? estante : e
-        ),
-        estanteLoading: false,
-        estanteError: null,
-      }));
-      
-      get().showSuccessNotification(
-        'Estante actualizado',
-        `El estante ${estante.nombre} ha sido actualizado exitosamente`
-      );
     } catch (error) {
+      console.error('Error en updateEstante:', error);
       const errorMessage = getErrorMessage(error);
       set({
         estanteLoading: false,
@@ -638,12 +747,123 @@ export const useAppStore = create<AppState>((set, get) => ({
   getEstanteById: (id) => {
     return get().estantes.find(e => e.id === id);
   },
+  // Secciones CRUD actions
+  loadSecciones: async (estanteId) => {
+    console.log('loadSecciones iniciado para estante:', estanteId);
+    const currentUser = get().currentUser;
+    console.log('Usuario actual completo:', currentUser);
+    console.log('Rol del usuario:', currentUser?.roleId);
+    console.log('¿Usuario >= Rol 3?:', (currentUser?.roleId || 0) >= 3);
+    
+    set({ seccionLoading: true, seccionError: null });
+    
+    try {
+      // Usar directamente businessApi en lugar de seccionService
+      const secciones = await businessApi.getSecciones(estanteId);
+      console.log('Secciones cargadas desde businessApi:', secciones);
+      
+      set({
+        secciones: secciones || [],
+        seccionLoading: false,
+        seccionError: null,
+      });
+      
+      get().showSuccessNotification(
+        'Secciones cargadas',
+        'Las secciones del estante se han cargado exitosamente'
+      );
+    } catch (error) {
+      console.error('Error en loadSecciones:', error);
+      const errorMessage = getErrorMessage(error);
+      set({
+        seccionLoading: false,
+        seccionError: errorMessage,
+      });
+      get().showErrorNotification(
+        'Error al cargar secciones',
+        errorMessage,
+        getErrorDetails(error)
+      );
+    }
+  },
+  updateSeccion: async (seccionId, updates) => {
+    set({ seccionLoading: true, seccionError: null });
+    
+    try {
+      // Usar directamente businessApi en lugar de seccionService
+      const seccionActualizada = await businessApi.updateSeccion(seccionId, updates);
+      console.log('Sección actualizada:', seccionActualizada);
+      
+      // Actualizar la sección en el estado local
+      set(state => ({
+        secciones: state.secciones.map(s => 
+          s.id === seccionId ? { ...s, ...seccionActualizada } : s
+        ),
+        seccionLoading: false,
+        seccionError: null,
+      }));
+      
+      get().showSuccessNotification(
+        'Sección actualizada',
+        'La sección ha sido actualizada exitosamente'
+      );
+    } catch (error) {
+      console.error('Error en updateSeccion:', error);
+      const errorMessage = getErrorMessage(error);
+      set({
+        seccionLoading: false,
+        seccionError: errorMessage,
+      });
+      
+      get().showErrorNotification(
+        'Error al actualizar sección',
+        errorMessage,
+        getErrorDetails(error)
+      );
+      throw error;
+    }
+  },
+  setSeccionLoading: (seccionLoading) => set({ seccionLoading }),
+  setSeccionError: (seccionError) => set({ seccionError }),
+  getSeccionById: (id) => {
+    return get().secciones.find(s => s.id === id);
+  },
+  obtenerEtiquetasUnicas: async (estanteId): Promise<string[]> => {
+    try {
+      const result = await seccionService.obtenerEtiquetasUnicas(estanteId);
+      
+      if (result.success && result.data) {
+        return result.data;
+      } else {
+        console.error('Error al obtener etiquetas únicas:', result.error || 'Error desconocido');
+        return [];
+      }
+    } catch (error) {
+      console.error('Error al obtener etiquetas únicas:', error);
+      return [];
+    }
+  },
+  generarMapaPosiciones: async (estanteId): Promise<{ [key: string]: SeccionResponse } | null> => {
+    try {
+      const result = await seccionService.generarMapaPosiciones(estanteId);
+      
+      if (result.success && result.data) {
+        return result.data;
+      } else {
+        console.error('Error al generar mapa de posiciones:', result.error || 'Error desconocido');
+        return null;
+      }
+    } catch (error) {
+      console.error('Error al generar mapa de posiciones:', error);
+      return null;
+    }
+  },
   // Biblioteca CRUD actions
   loadBibliotecas: async () => {
     set({ bibliotecaLoading: true, bibliotecaError: null });
     
     try {
-      const apiResponse = await businessApi.getBibliotecas();
+      const apiResponse = await bibliotecaApi.listar();
       const bibliotecas = apiResponse.map(mappers.bibliotecaResponseToBiblioteca);
       
       set({
@@ -670,7 +890,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     
     try {
       const apiData = mappers.bibliotecaToApiRequest(newBiblioteca);
-      const apiResponse = await businessApi.createBiblioteca(apiData);
+      const apiResponse = await bibliotecaApi.crear(apiData);
       const biblioteca = mappers.bibliotecaResponseToBiblioteca(apiResponse);
       
       set((state) => ({
@@ -703,7 +923,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     
     try {
       const biblioteca = get().getBibliotecaById(id);
-      await businessApi.deleteBiblioteca(id);
+      await bibliotecaApi.eliminar(id);
       
       set((state) => ({
         bibliotecas: state.bibliotecas.filter(biblioteca => biblioteca.id !== id),
@@ -736,11 +956,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       const apiData: any = {};
       if (updates.nombre) apiData.nombre = updates.nombre;
-      if (updates.direccion) apiData.direccion = updates.direccion;
-      if (updates.telefono) apiData.telefono = updates.telefono;
-      if (updates.email) apiData.email = updates.email;
+      if (updates.direccion) apiData.ubicacion = updates.direccion; // Mapear direccion a ubicacion
+      if (updates.estado) apiData.estado = updates.estado;
       
-      const apiResponse = await businessApi.updateBiblioteca(id, apiData);
+      const apiResponse = await bibliotecaApi.actualizar(id, apiData);
       const biblioteca = mappers.bibliotecaResponseToBiblioteca(apiResponse);
       
       set((state) => ({

@@ -77,6 +77,12 @@ export interface Estante {
   etiquetas?: string[];
 }
 
+export interface SeccionFormData {
+  etiqueta?: string;
+  fila?: number;
+  columna?: number;
+}
+
 export interface Biblioteca {
   id: number;
   nombre: string;

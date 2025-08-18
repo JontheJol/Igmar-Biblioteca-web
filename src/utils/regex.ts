@@ -37,8 +37,8 @@ export const REGEX_PATTERNS = {
   // Fila (números del 1 al 99)
   FILA: /^([1-9]|[1-9][0-9])$/,
   
-  // Columna (letra mayúscula A-Z)
-  COLUMNA: /^[A-Z]$/,
+  // Columna (números del 1 al 99)
+  COLUMNA: /^([1-9]|[1-9][0-9])$/,
   
   // Fecha (formato YYYY-MM-DD)
   FECHA: /^\d{4}-\d{2}-\d{2}$/,
@@ -63,7 +63,7 @@ export const REGEX_ERROR_MESSAGES = {
   ESTADO_LIBROS: 'Solo se acepta: Disponible, No disponible o Prestado.',
   ESTADO_PRESTAMOS: 'Solo se acepta: Activo, Entregado, Atrasado o Perdido.',
   FILA: 'Solo se permiten números enteros del 1 al 99.',
-  COLUMNA: 'Solo se permite una letra mayúscula (A-Z).',
+  COLUMNA: 'Solo se permiten números enteros del 1 al 99.',
   FECHA: 'Formato de fecha debe ser YYYY-MM-DD.',
   NOMBRE_LIBRO: 'Letras, números, espacios y signos básicos. Máximo 100 caracteres.',
   UBICACION: 'Formato de dirección inválido. Máximo 100 caracteres.',

@@ -8,7 +8,7 @@ import { apiClient, ApiError } from './api';
 import type { ApiResponse } from './api';
 
 // Base URL para Business API
-const BUSINESS_API_BASE_URL = import.meta.env.VITE_BUSINESS_API_URL || 'http://127.0.0.1:37447/api/business';
+const BUSINESS_API_BASE_URL = import.meta.env.VITE_BUSINESS_API_URL || 'http://localhost:5174/api/business';
 
 // Tipos de respuesta específicos de Business API
 export interface BibliotecaResponse {
@@ -29,6 +29,16 @@ export interface EstanteResponse {
   capacidad: number;
   ubicacion: string;
   estado: number;
+}
+
+export interface SeccionResponse {
+  id: number;
+  estante_id: number;
+  etiqueta: string;
+  fila: number;
+  columna: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface LibroResponse {
@@ -253,6 +263,26 @@ class BusinessApiClient {
     await this.request(`/estante/${id}`, {
       method: 'DELETE',
     });
+  }
+
+  // === SECCIONES ===
+  async getSecciones(estanteId: number): Promise<SeccionResponse[]> {
+    const response = await this.request<SeccionResponse[]>(`/secciones/${estanteId}`, {
+      method: 'GET',
+    });
+    return response.data;
+  }
+
+  async updateSeccion(id: number, data: Partial<{
+    etiqueta: string;
+    fila: number;
+    columna: number;
+  }>): Promise<SeccionResponse> {
+    const response = await this.request<SeccionResponse>(`/seccion/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return response.data;
   }
 
   // === LIBROS ===
@@ -541,6 +571,11 @@ export const businessApi = {
   updateEstante: (id: number, data: Parameters<typeof businessApiClient.updateEstante>[1]) => 
     businessApiClient.updateEstante(id, data),
   deleteEstante: (id: number) => businessApiClient.deleteEstante(id),
+
+  // Secciones
+  getSecciones: (estanteId: number) => businessApiClient.getSecciones(estanteId),
+  updateSeccion: (id: number, data: Parameters<typeof businessApiClient.updateSeccion>[1]) => 
+    businessApiClient.updateSeccion(id, data),
 
   // Libros
   createLibro: (data: Parameters<typeof businessApiClient.createLibro>[0]) => 

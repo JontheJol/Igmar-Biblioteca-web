@@ -28,12 +28,14 @@ import { useForm, Controller, useWatch } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useAppStore } from '../store/appStore';
 import { estanteSchema } from '../utils/validation';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { useLoading } from '../hooks/useLoading';
 import type { EstanteFormData } from '../utils/validation';
 
 const EditarEstante: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { estantes, updateEstante } = useAppStore(); // Solo necesitamos updateEstante
+  const { estantes, updateEstante, removeEstante, loadSecciones, updateSeccion, secciones, currentUser } = useAppStore(); // Añadido currentUser
 
   // Estados para el manejo de etiquetas
   const [mostrarEtiquetas, setMostrarEtiquetas] = useState(false);
@@ -43,12 +45,23 @@ const EditarEstante: React.FC = () => {
   const [etiquetaEditando, setEtiquetaEditando] = useState<{ index: number; valor: string } | null>(null);
   const [espaciosSeleccionados, setEspaciosSeleccionados] = useState<number[]>([]);
   const [modoSeleccionMultiple, setModoSeleccionMultiple] = useState(false);
+  const [etiquetasCargadas, setEtiquetasCargadas] = useState(false);
+  
+  // Estado para confirmar eliminación
+  const [mostrarConfirmacionEliminar, setMostrarConfirmacionEliminar] = useState(false);
   
   // Etiquetas únicas disponibles para este estante específico
   const etiquetasDisponiblesEstante = Array.from(new Set(etiquetas.filter(e => e && e.trim())));
 
   // Buscar el estante a editar
   const estante = estantes.find(e => e.id === Number(id));
+
+  // Hook de loading reutilizable
+  const {
+    loading: operationLoading,
+    startLoading,
+    stopLoading
+  } = useLoading();
 
   const { control, handleSubmit, formState: { errors }, setValue } = useForm<EstanteFormData>({
     resolver: yupResolver(estanteSchema),
@@ -108,11 +121,17 @@ const EditarEstante: React.FC = () => {
         {Array.from({ length: filas * columnas }, (_, index) => {
           const filaActual = Math.floor(index / columnas) + 1;
           const columnaActual = (index % columnas) + 1;
+          const etiquetaDefault = `${filaActual}-${columnaActual}`;
           
-          // Si estamos en modo etiquetas, mostrar la etiqueta correspondiente
-          const contenido = mostrarEtiquetas && etiquetas[index] 
+          // Si estamos en modo etiquetas, mostrar la etiqueta solo si es personalizada
+          // (diferente al formato por defecto)
+          const etiquetaPersonalizada = etiquetas[index] && 
+                                       etiquetas[index].trim() !== '' && 
+                                       etiquetas[index] !== etiquetaDefault;
+          
+          const contenido = mostrarEtiquetas && etiquetaPersonalizada
             ? etiquetas[index] 
-            : `${filaActual}-${columnaActual}`;
+            : etiquetaDefault;
           
           const estaSeleccionado = espaciosSeleccionados.includes(index);
           
@@ -121,7 +140,7 @@ const EditarEstante: React.FC = () => {
               key={index}
               sx={{
                 backgroundColor: mostrarEtiquetas 
-                  ? (estaSeleccionado ? '#2f5232' : '#E1C5AB')
+                  ? (estaSeleccionado ? '#2f5232' : (etiquetaPersonalizada ? '#E1C5AB' : '#B8A9C9'))
                   : '#B8A9C9',
                 borderRadius: '4px',
                 display: 'flex',
@@ -135,7 +154,9 @@ const EditarEstante: React.FC = () => {
                 border: `2px solid ${
                   estaSeleccionado 
                     ? '#1a3d1e' 
-                    : mostrarEtiquetas ? '#C9A876' : '#9A8AA8'
+                    : mostrarEtiquetas 
+                      ? (etiquetaPersonalizada ? '#C9A876' : '#9A8AA8')
+                      : '#9A8AA8'
                 }`,
                 boxShadow: estaSeleccionado 
                   ? '0px 2px 4px rgba(0,0,0,0.3)' 
@@ -251,66 +272,259 @@ const EditarEstante: React.FC = () => {
   };
 
   const onSubmit = async (values: EstanteFormData) => {
+    startLoading();
+    
     try {
       if (!estante) {
         console.error('No se encontró el estante a editar');
-        navigate('/estantes');
+        setTimeout(() => {
+          stopLoading();
+          navigate('/estantes');
+        }, 1500);
         return;
       }
 
-      // Usar directamente la ubicación ingresada por el usuario
+      // Actualizar el estante
       const estanteData = {
         ...estante,
         ...values,
         nombre: values.ubicacion, // El nombre es exactamente la ubicación ingresada
       };
 
-      updateEstante(estante.id, estanteData);
+      await updateEstante(estante.id, estanteData);
       
-      // El store ya muestra la notificación automáticamente
-      navigate('/estantes');
+      // Si está en modo etiquetas, guardar las etiquetas como secciones
+      if (mostrarEtiquetas && etiquetas.length > 0) {
+        await guardarEtiquetasComoSecciones(values);
+        // Recargar las etiquetas después de guardar para reflejar los cambios
+        setEtiquetasCargadas(false);
+        // El loading y navegación se maneja en guardarEtiquetasComoSecciones
+      } else {
+        setTimeout(() => {
+          stopLoading();
+          navigate('/estantes');
+        }, 1500);
+      }
+      
     } catch (error) {
       console.error('Error al actualizar estante:', error);
-      navigate('/estantes');
+      setTimeout(() => {
+        stopLoading();
+        navigate('/estantes');
+      }, 2000);
+    }
+  };
+
+  const guardarEtiquetasComoSecciones = async (values: EstanteFormData) => {
+    startLoading();
+    
+    try {
+      // Verificar permisos del usuario
+      if (!currentUser || currentUser.roleId < 3) {
+        console.warn('Usuario no tiene permisos para actualizar secciones');
+        setTimeout(() => {
+          stopLoading();
+          navigate('/estantes');
+        }, 1500);
+        return;
+      }
+
+      // Cargar las secciones actuales del estante
+      await loadSecciones(estante!.id);
+      
+      // Actualizar secciones existentes con las etiquetas
+      const columnas = parseInt(values.columna || '0');
+      
+      let seccionesActualizadas = 0;
+      
+      for (let i = 0; i < etiquetas.length; i++) {
+        const etiqueta = etiquetas[i];
+        
+        if (!etiqueta || !etiqueta.trim()) {
+          continue; // Saltar espacios vacíos
+        }
+        
+        // Calcular posición (fila, columna) basada en el índice
+        const fila = Math.floor(i / columnas) + 1;
+        const columna = (i % columnas) + 1;
+        const etiquetaDefault = `${fila}-${columna}`;
+        
+        // No guardar etiquetas que coincidan con el formato por defecto
+        if (etiqueta.trim() === etiquetaDefault) {
+          console.log(`Saltando etiqueta por defecto: ${etiqueta.trim()}`);
+          continue;
+        }
+        
+        // Buscar si ya existe una sección en esta posición
+        const seccionExistente = secciones.find(s => 
+          s.estante_id === estante!.id && s.fila === fila && s.columna === columna
+        );
+        
+        if (seccionExistente) {
+          // Actualizar sección existente con la etiqueta personalizada
+          await updateSeccion(seccionExistente.id, {
+            etiqueta: etiqueta.trim(),
+            fila,
+            columna
+          });
+          
+          seccionesActualizadas++;
+          console.log(`Sección actualizada: ${fila}-${columna} con etiqueta personalizada "${etiqueta.trim()}"`);
+        } else {
+          console.log(`No se encontró sección para posición ${fila}-${columna}`);
+        }
+      }
+      
+      if (seccionesActualizadas > 0) {
+        console.log(`Se actualizaron ${seccionesActualizadas} secciones con etiquetas`);
+      }
+      
+      setTimeout(() => {
+        stopLoading();
+        navigate('/estantes');
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Error al guardar etiquetas:', error);
+      setTimeout(() => {
+        stopLoading();
+        navigate('/estantes');
+      }, 2000);
+      // No interrumpir el flujo, solo mostrar error en consola
     }
   };
 
   // Cargar los datos del estante cuando el componente se monta
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-    useEffect(() => {
-      if (estante) {
-        setValue('ubicacion', estante.ubicacion || '');
-        setValue('fila', estante.fila || '');
-        setValue('columna', estante.columna || '');
-        
-        // Cargar etiquetas existentes del estante
-        // Crear un array con las etiquetas en sus posiciones correspondientes
-        const filas = parseInt(estante.fila || '0');
-        const columnas = parseInt(estante.columna || '0');
-        const totalEspacios = filas * columnas;
+  useEffect(() => {
+    if (estante && !etiquetasCargadas) {
+      setValue('ubicacion', estante.ubicacion || '');
+      setValue('fila', estante.fila || '');
+      setValue('columna', estante.columna || '');
+      
+      // Cargar etiquetas existentes del estante
+      const filas = parseInt(estante.fila || '0');
+      const columnas = parseInt(estante.columna || '0');
+      const totalEspacios = (filas > 0 && columnas > 0) ? filas * columnas : 0;
+      
+      if (totalEspacios > 0 && totalEspacios <= 1000) { // Límite razonable
         const etiquetasArray = new Array(totalEspacios).fill('');
         
-        // Si el estante tiene etiquetas guardadas, cargarlas
-        if (estante.etiquetas && estante.etiquetas.length > 0) {
-          // Aquí podrías cargar las etiquetas desde el backend
-          // Por ahora, distribuimos las etiquetas del estante en los primeros espacios
-          estante.etiquetas.forEach((etiqueta, index) => {
-            if (index < totalEspacios) {
-              etiquetasArray[index] = etiqueta;
+        const cargarEtiquetasDesdeAPI = async () => {
+          startLoading();
+          try {
+            // Verificar permisos del usuario
+            if (!currentUser || currentUser.roleId < 3) {
+              console.warn('Usuario no tiene permisos para cargar secciones, usando etiquetas locales');
+              cargarEtiquetasLocales();
+              return;
             }
-          });
-        }
+            
+            // Cargar secciones desde la API
+            await loadSecciones(estante.id);
+            
+            // Poblar etiquetas basadas en las secciones (usar el estado actualizado)
+            // Nota: Las secciones se actualizarán en el store, las usaremos en el próximo render
+            setEtiquetasCargadas(true);
+            setTimeout(() => stopLoading(), 1000);
+            
+          } catch (error) {
+            console.error('Error al cargar etiquetas desde API:', error);
+            setTimeout(() => {
+              cargarEtiquetasLocales();
+              stopLoading();
+            }, 1000);
+          }
+        };
+
+        const cargarEtiquetasLocales = () => {
+          // Fallback: usar etiquetas del estante si las hay
+          if (estante.etiquetas && estante.etiquetas.length > 0) {
+            estante.etiquetas.forEach((etiqueta, index) => {
+              if (index < totalEspacios) {
+                // Calcular la etiqueta por defecto para esta posición
+                const fila = Math.floor(index / columnas) + 1;
+                const columna = (index % columnas) + 1;
+                const etiquetaDefault = `${fila}-${columna}`;
+                
+                // Solo asignar si no coincide con el formato por defecto
+                if (etiqueta && etiqueta.trim() !== etiquetaDefault) {
+                  etiquetasArray[index] = etiqueta;
+                }
+              }
+            });
+            console.log('Etiquetas personalizadas cargadas localmente:', etiquetasArray.filter(e => e));
+          }
+          setEtiquetas(etiquetasArray);
+          setEtiquetasCargadas(true);
+        };
+          
+        cargarEtiquetasDesdeAPI();
+      } else {
+        // Si los espacios no son válidos, usar un array vacío
+        setEtiquetas([]);
+        setEtiquetasCargadas(true);
+      }
+    } else if (id && !estante) {
+      // Si no se encuentra el estante, redirigir
+      console.error('Estante no encontrado');
+      navigate('/estantes');
+    }
+  }, [estante, id, setValue, navigate, currentUser, etiquetasCargadas]);
+
+  // Efecto separado para mapear las secciones a etiquetas cuando se cargan
+  useEffect(() => {
+    if (etiquetasCargadas && estante && secciones.length > 0) {
+      const filas = parseInt(estante.fila || '0');
+      const columnas = parseInt(estante.columna || '0');
+      const totalEspacios = (filas > 0 && columnas > 0) ? filas * columnas : 0;
+      
+      if (totalEspacios > 0) {
+        const etiquetasArray = new Array(totalEspacios).fill('');
+        
+        // Poblar etiquetas basadas en las secciones
+        secciones.forEach(seccion => {
+          if (seccion.estante_id === estante.id && seccion.etiqueta) {
+            // Calcular índice basado en fila y columna
+            const index = (seccion.fila - 1) * columnas + (seccion.columna - 1);
+            if (index >= 0 && index < totalEspacios) {
+              const etiquetaDefault = `${seccion.fila}-${seccion.columna}`;
+              // Solo asignar la etiqueta si no coincide con el formato por defecto
+              if (seccion.etiqueta.trim() !== etiquetaDefault) {
+                etiquetasArray[index] = seccion.etiqueta;
+              }
+            }
+          }
+        });
         
         setEtiquetas(etiquetasArray);
-      } else if (id) {
-        // Si no se encuentra el estante, redirigir
-        console.error('Estante no encontrado');
-        navigate('/estantes');
+        console.log('Etiquetas cargadas desde secciones:', etiquetasArray.filter(e => e));
       }
-    }, [estante, id, setValue, navigate]);
+    }
+  }, [secciones, estante, etiquetasCargadas]);
 
   const handleCancelar = () => {
     navigate('/estantes');
+  };
+
+  const handleEliminarEstante = () => {
+    setMostrarConfirmacionEliminar(true);
+  };
+
+  const handleConfirmarEliminacion = async () => {
+    try {
+      if (!estante) return;
+      
+      await removeEstante(estante.id);
+      setMostrarConfirmacionEliminar(false);
+      navigate('/estantes');
+    } catch (error) {
+      console.error('Error al eliminar estante:', error);
+      setMostrarConfirmacionEliminar(false);
+    }
+  };
+
+  const handleCancelarEliminacion = () => {
+    setMostrarConfirmacionEliminar(false);
   };
 
   if (!estante) {
@@ -319,6 +533,13 @@ const EditarEstante: React.FC = () => {
 
   return (
     <Box sx={{ backgroundColor: '#fff9ec', minHeight: '100vh', position: 'relative' }}>
+      <LoadingSpinner 
+        loading={operationLoading} 
+        fullscreen={true}
+        overlay={true}
+        size={60}
+      />
+      
       <Box
         sx={{
           padding: { xs: 3, sm: 4 },
@@ -353,11 +574,41 @@ const EditarEstante: React.FC = () => {
           }}
         />
 
+        {/* Debug de usuario - información temporal */}
+        {currentUser && (
+          <Box
+            sx={{
+              mb: 2,
+              p: 2,
+              bgcolor: '#f5f5f5',
+              borderRadius: 2,
+              border: '1px solid #ddd'
+            }}
+          >
+            <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
+              🔍 Debug - Info del Usuario:
+            </Typography>
+            <Typography variant="body2">
+              <strong>Nombre:</strong> {currentUser.name} | <strong>Email:</strong> {currentUser.email}
+            </Typography>
+            <Typography variant="body2">
+              <strong>Rol ID:</strong> {currentUser.roleId} | <strong>Rol:</strong> {currentUser.roleName}
+            </Typography>
+            <Typography variant="body2" sx={{ 
+              color: currentUser.roleId >= 3 ? 'green' : 'red',
+              fontWeight: 'bold'
+            }}>
+              Estado secciones: {currentUser.roleId >= 3 ? '✅ Permitido (Rol ≥ 3)' : '❌ No permitido (Requiere Rol ≥ 3)'}
+            </Typography>
+          </Box>
+        )}
+
         {/* Slider para alternar entre vista normal y etiquetas */}
         <Box
           sx={{
             display: 'flex',
-            justifyContent: 'center',
+            flexDirection: 'column',
+            alignItems: 'center',
             marginBottom: '20px'
           }}
         >
@@ -366,6 +617,7 @@ const EditarEstante: React.FC = () => {
               <Switch
                 checked={mostrarEtiquetas}
                 onChange={(e) => setMostrarEtiquetas(e.target.checked)}
+                disabled={!currentUser || currentUser.roleId < 3}
                 sx={{
                   '& .MuiSwitch-track': {
                     backgroundColor: '#B8A9C9',
@@ -397,6 +649,20 @@ const EditarEstante: React.FC = () => {
               </Typography>
             }
           />
+          {(!currentUser || currentUser.roleId < 3) && (
+            <Typography
+              sx={{
+                fontFamily: 'League Spartan',
+                fontSize: '14px',
+                color: '#d32f2f',
+                fontStyle: 'italic',
+                marginTop: '5px',
+                textAlign: 'center'
+              }}
+            >
+              * Se requiere rol de Administrador para usar el sistema de etiquetas persistente
+            </Typography>
+          )}
         </Box>
 
         {/* Contenedor principal */}
@@ -509,7 +775,8 @@ const EditarEstante: React.FC = () => {
               sx={{
                 display: 'flex',
                 justifyContent: 'center',
-                gap: { xs: '20px', md: '40px' },
+                flexWrap: 'wrap',
+                gap: { xs: '12px', md: '16px' },
                 marginTop: '24px',
                 paddingTop: '16px'
               }}
@@ -521,10 +788,10 @@ const EditarEstante: React.FC = () => {
                   color: '#fff9ec',
                   borderRadius: '8px',
                   height: '38px',
-                  width: '145px',
+                  width: { xs: '100%', sm: '120px' },
                   fontFamily: 'League Spartan',
                   fontWeight: 500,
-                  fontSize: '20px',
+                  fontSize: '16px',
                   letterSpacing: '0.1px',
                   lineHeight: '20px',
                   textTransform: 'none',
@@ -537,6 +804,28 @@ const EditarEstante: React.FC = () => {
                 Cancelar
               </Button>
               <Button
+                onClick={handleEliminarEstante}
+                sx={{
+                  backgroundColor: '#d32f2f',
+                  color: '#fff',
+                  borderRadius: '8px',
+                  height: '38px',
+                  width: { xs: '100%', sm: '120px' },
+                  fontFamily: 'League Spartan',
+                  fontWeight: 500,
+                  fontSize: '16px',
+                  letterSpacing: '0.1px',
+                  lineHeight: '20px',
+                  textTransform: 'none',
+                  boxShadow: '0px 1px 2px 0px rgba(0,0,0,0.3), 0px 1px 3px 1px rgba(0,0,0,0.15)',
+                  '&:hover': {
+                    backgroundColor: '#c62828',
+                  }
+                }}
+              >
+                Eliminar
+              </Button>
+              <Button
                 type="submit"
                 form="estante-form"
                 sx={{
@@ -544,10 +833,10 @@ const EditarEstante: React.FC = () => {
                   color: '#fff9ec',
                   borderRadius: '8px',
                   height: '38px',
-                  width: '145px',
+                  width: { xs: '100%', sm: '120px' },
                   fontFamily: 'League Spartan',
                   fontWeight: 500,
-                  fontSize: '20px',
+                  fontSize: '16px',
                   letterSpacing: '0.1px',
                   lineHeight: '20px',
                   textTransform: 'none',
@@ -681,17 +970,18 @@ const EditarEstante: React.FC = () => {
                           <TextField
                             {...field}
                             placeholder="1"
+                            disabled={true} // Campo deshabilitado - no se puede editar una vez creado
                             error={Boolean(errors.fila)}
                             sx={{
                               width: '100%',
                               '& .MuiOutlinedInput-root': {
-                                backgroundColor: '#fff9ec',
+                                backgroundColor: '#f5f5f5', // Color más gris para indicar que está deshabilitado
                                 borderRadius: '10px',
                                 height: '44px',
                                 fontFamily: 'League Spartan',
                                 fontSize: '24px',
                                 fontWeight: 500,
-                                color: '#453726',
+                                color: '#9e9e9e', // Color más tenue para texto deshabilitado
                                 '& fieldset': {
                                   border: 'none',
                                 },
@@ -714,6 +1004,19 @@ const EditarEstante: React.FC = () => {
                           {errors.fila.message}
                         </FormHelperText>
                       )}
+                      {/* Texto explicativo para campo deshabilitado */}
+                      <Typography
+                        sx={{
+                          color: '#9e9e9e',
+                          fontSize: '12px',
+                          fontFamily: 'League Spartan',
+                          fontStyle: 'italic',
+                          textAlign: 'center',
+                          marginTop: '4px'
+                        }}
+                      >
+                        No se puede modificar una vez creado el estante
+                      </Typography>
                     </Box>
                   )}
 
@@ -740,17 +1043,18 @@ const EditarEstante: React.FC = () => {
                           <TextField
                             {...field}
                             placeholder="1"
+                            disabled={true} // Campo deshabilitado - no se puede editar una vez creado
                             error={Boolean(errors.columna)}
                             sx={{
                               width: '100%',
                               '& .MuiOutlinedInput-root': {
-                                backgroundColor: '#fff9ec',
+                                backgroundColor: '#f5f5f5', // Color más gris para indicar que está deshabilitado
                                 borderRadius: '10px',
                                 height: '44px',
                                 fontFamily: 'League Spartan',
                                 fontSize: '24px',
                                 fontWeight: 500,
-                                color: '#453726',
+                                color: '#9e9e9e', // Color más tenue para texto deshabilitado
                                 '& fieldset': {
                                   border: 'none',
                                 },
@@ -773,6 +1077,19 @@ const EditarEstante: React.FC = () => {
                           {errors.columna.message}
                         </FormHelperText>
                       )}
+                      {/* Texto explicativo para campo deshabilitado */}
+                      <Typography
+                        sx={{
+                          color: '#9e9e9e',
+                          fontSize: '12px',
+                          fontFamily: 'League Spartan',
+                          fontStyle: 'italic',
+                          textAlign: 'center',
+                          marginTop: '4px'
+                        }}
+                      >
+                        No se puede modificar una vez creado el estante
+                      </Typography>
                     </Box>
                   )}
                 </Box>
@@ -1090,6 +1407,95 @@ const EditarEstante: React.FC = () => {
           </Card>
         </Box>
       </Box>
+
+      {/* Diálogo de confirmación para eliminar estante */}
+      <Dialog 
+        open={mostrarConfirmacionEliminar} 
+        onClose={handleCancelarEliminacion}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle
+          sx={{
+            fontFamily: 'League Spartan',
+            fontWeight: 600,
+            fontSize: '24px',
+            color: '#d32f2f',
+            textAlign: 'center',
+            paddingBottom: '8px'
+          }}
+        >
+          ⚠️ Confirmar Eliminación
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ textAlign: 'center', padding: '16px 0' }}>
+            <Typography
+              sx={{
+                fontFamily: 'League Spartan',
+                fontWeight: 500,
+                fontSize: '18px',
+                color: '#453726',
+                marginBottom: '16px'
+              }}
+            >
+              ¿Estás seguro de que deseas eliminar este estante?
+            </Typography>
+            <Typography
+              sx={{
+                fontFamily: 'League Spartan',
+                fontWeight: 600,
+                fontSize: '20px',
+                color: '#d32f2f',
+                marginBottom: '8px'
+              }}
+            >
+              {estante?.nombre || 'Estante'}
+            </Typography>
+            <Typography
+              sx={{
+                fontFamily: 'League Spartan',
+                fontWeight: 400,
+                fontSize: '14px',
+                color: '#666',
+                fontStyle: 'italic'
+              }}
+            >
+              Esta acción no se puede deshacer
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ padding: '16px 24px', justifyContent: 'center', gap: '16px' }}>
+          <Button 
+            onClick={handleCancelarEliminacion}
+            sx={{
+              fontFamily: 'League Spartan',
+              color: '#453726',
+              borderColor: '#453726',
+              '&:hover': {
+                backgroundColor: 'rgba(69, 55, 38, 0.1)',
+                borderColor: '#453726'
+              }
+            }}
+            variant="outlined"
+          >
+            Cancelar
+          </Button>
+          <Button 
+            onClick={handleConfirmarEliminacion}
+            sx={{
+              fontFamily: 'League Spartan',
+              backgroundColor: '#d32f2f',
+              color: '#fff',
+              '&:hover': {
+                backgroundColor: '#c62828',
+              }
+            }}
+            variant="contained"
+          >
+            Sí, Eliminar
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Diálogo para agregar/editar etiquetas */}
       <Dialog 

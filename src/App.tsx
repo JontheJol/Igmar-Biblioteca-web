@@ -4,6 +4,7 @@ import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import AppLayout from './components/AppLayout';
 import ConditionalLayout from './components/ConditionalLayout';
 import NotificationDialog from './components/NotificationDialog';
+import UserDebugInfo from './components/UserDebugInfo';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleProtectedRoute from './components/RoleProtectedRoute';
 import AddUser from './pages/AddUser';
@@ -298,6 +299,7 @@ function App() {
             onClose={hideNotification}
           />
         </AppLayout>
+        <UserDebugInfo />
       </Router>
     </ThemeProvider>
   );

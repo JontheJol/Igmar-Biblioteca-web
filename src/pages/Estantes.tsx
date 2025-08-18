@@ -12,7 +12,7 @@ import {
   InputAdornment
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AddIcon from '../assets/addIcon';
 import BookIcon from '../assets/bookIcon';
@@ -23,9 +23,17 @@ import ActionButton from '../components/ActionButton';
 
 const Estantes: React.FC = () => {
   const navigate = useNavigate();
-  const { estantes } = useAppStore();
+  const estantes = useAppStore(state => state.estantes || []);
+  const loadEstantes = useAppStore(state => state.loadEstantes);
+  const estanteLoading = useAppStore(state => state.estanteLoading);
+  const estanteError = useAppStore(state => state.estanteError);
   const [filtro, setFiltro] = useState('Todos');
   const [busqueda, setBusqueda] = useState('');
+
+  // Cargar estantes al montar el componente
+  useEffect(() => {
+    loadEstantes();
+  }, [loadEstantes]);
 
   const handleFiltroChange = (event: SelectChangeEvent) => {
     setFiltro(event.target.value);
@@ -35,14 +43,20 @@ const Estantes: React.FC = () => {
     setBusqueda(event.target.value);
   };
 
+  // Asegurar que estantes sea un array válido (ya garantizado por el selector)
   const estantesFiltrados = estantes.filter(estante => {
+    // Verificar que el estante y sus propiedades existan
+    if (!estante || !estante.nombre) {
+      return false;
+    }
+    
     // Filtro por búsqueda (nombre del estante)
     const coincideBusqueda = estante.nombre.toLowerCase().includes(busqueda.toLowerCase());
     
     // Filtro por disponibilidad
     let coincideFiltro = true;
-    if (filtro === 'Disponibles') coincideFiltro = estante.espaciosDisponibles > 0;
-    if (filtro === 'Llenos') coincideFiltro = estante.espaciosDisponibles === 0;
+    if (filtro === 'Disponibles') coincideFiltro = (estante.espaciosDisponibles || 0) > 0;
+    if (filtro === 'Llenos') coincideFiltro = (estante.espaciosDisponibles || 0) === 0;
     
     return coincideBusqueda && coincideFiltro;
   });
@@ -248,7 +262,26 @@ const Estantes: React.FC = () => {
           },
         }}
       >
-                {estantesFiltrados.map((estante) => (
+        {estanteLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px', gridColumn: '1 / -1' }}>
+            <Typography variant="h6" sx={{ color: '#a47149' }}>
+              Cargando estantes...
+            </Typography>
+          </Box>
+        ) : estanteError ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px', gridColumn: '1 / -1' }}>
+            <Typography variant="h6" sx={{ color: '#d32f2f' }}>
+              Error al cargar estantes: {estanteError}
+            </Typography>
+          </Box>
+        ) : estantesFiltrados.length === 0 ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px', gridColumn: '1 / -1' }}>
+            <Typography variant="h6" sx={{ color: '#a47149' }}>
+              No se encontraron estantes
+            </Typography>
+          </Box>
+        ) : (
+          estantesFiltrados.map((estante) => (
           <Card
             key={estante.id}
             sx={{
@@ -461,7 +494,8 @@ const Estantes: React.FC = () => {
               </Box>
             </Box>
           </Card>
-        ))}
+        )))
+        }
       </Box>
     </Box>
   );
