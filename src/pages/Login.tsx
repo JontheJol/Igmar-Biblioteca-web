@@ -116,37 +116,6 @@ const Login: React.FC = () => {
           </Box>
         </Box>
       </Container>
-
-      {/* Demo Credentials Info */}
-      <Box
-        sx={{
-          position: 'fixed',
-          bottom: 16,
-          right: 16,
-          backgroundColor: 'rgba(255, 255, 255, 0.95)',
-          padding: 2,
-          borderRadius: 2,
-          border: '1px solid rgba(69, 55, 38, 0.2)',
-          fontSize: '13px',
-          color: '#453726',
-          fontFamily: 'League Spartan, sans-serif',
-          zIndex: 1000,
-          display: { xs: 'none', sm: 'block' },
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        }}
-      >
-        <strong>Credenciales Demo:</strong><br />
-        <Box sx={{ mt: 1, mb: 1 }}>
-          <strong style={{ color: '#1976d2' }}>👤 Administrador:</strong><br />
-          Email: admin@booksmart.com<br />
-          Password: password
-        </Box>
-        <Box>
-          <strong style={{ color: '#ed6c02' }}>⭐ Super Administrador:</strong><br />
-          Email: superadmin@booksmart.com<br />
-          Password: password
-        </Box>
-      </Box>
     </Box>
   );
 };

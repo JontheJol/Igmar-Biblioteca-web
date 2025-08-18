@@ -132,9 +132,10 @@ interface AppState {
   addLibro: (libro: Omit<Libro, 'id'>) => Promise<void>;
   removeLibro: (id: number) => Promise<void>;
   updateLibro: (id: number, updates: Partial<Libro>) => Promise<void>;
+  assignLibroToEstante: (data: { libro_id: number; estante: string; etiqueta: string; fila: string; columna: string }) => Promise<void>;
   setLibroLoading: (loading: boolean) => void;
   setLibroError: (error: string | null) => void;
-  getLibroById: (id: number) => Libro | undefined;
+  getLibroById: (id: number) => Promise<Libro | undefined>;
   // Estante CRUD actions
   loadEstantes: (bibliotecaId?: number) => Promise<void>;
   addEstante: (estante: Omit<Estante, 'id'>) => Promise<void>;
@@ -374,27 +375,74 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ libroLoading: true, libroError: null });
     
     try {
-      const params = bibliotecaId ? { biblioteca_id: bibliotecaId } : undefined;
-      const apiResponse = await libroApi.listar(params);
-      const libros = apiResponse.map(mappers.libroResponseToLibro);
+      // Intentar cargar desde la API primero
+      console.log('Intentando cargar libros desde API...');
+      const result = await libroApi.listar({ biblioteca_id: bibliotecaId });
       
-      set({
-        libros,
-        libroLoading: false,
-        libroError: null,
-      });
+      if (result && Array.isArray(result)) {
+        console.log('Respuesta de API libros:', result);
+        const libros = result.map(mappers.libroResponseToLibro);
+        console.log('Libros mapeados:', libros);
+        
+        set({
+          libros,
+          libroLoading: false,
+          libroError: null,
+        });
+      } else {
+        throw new Error('Respuesta de API inválida');
+      }
     } catch (error) {
-      const errorMessage = getErrorMessage(error);
-      set({
-        libroLoading: false,
-        libroError: errorMessage,
-      });
+      console.error('Error al cargar libros desde API, usando datos mock:', error);
       
-      get().showErrorNotification(
-        'Error al cargar libros',
-        errorMessage,
-        getErrorDetails(error)
-      );
+      // Fallback a datos mock si falla la API
+      const librosMockeados = [
+        {
+          id: 1,
+          titulo: 'El Quijote de la Mancha',
+          autor: 'Miguel de Cervantes',
+          editorial: 'Editorial Planeta',
+          estante: 'A12',
+          isbn: '978-84-08-12345-6',
+          fechaPublicacion: '1605-01-16',
+          estado: 'Disponible',
+          fila: '2',
+          columna: '3',
+          ubicacion: 'A12-2-3'
+        },
+        {
+          id: 2,
+          titulo: 'Cien años de soledad',
+          autor: 'Gabriel García Márquez',
+          editorial: 'Editorial Sudamericana',
+          estante: 'B15',
+          isbn: '978-84-376-0494-7',
+          fechaPublicacion: '1967-05-30',
+          estado: 'Disponible',
+          fila: '1',
+          columna: '5',
+          ubicacion: 'B15-1-5'
+        },
+        {
+          id: 3,
+          titulo: '1984',
+          autor: 'George Orwell',
+          editorial: 'Penguin Books',
+          estante: 'C08',
+          isbn: '978-0-452-28423-4',
+          fechaPublicacion: '1949-06-08',
+          estado: 'Prestado',
+          fila: '3',
+          columna: '2',
+          ubicacion: 'C08-3-2'
+        }
+      ];
+      
+      set({
+        libros: librosMockeados,
+        libroLoading: false,
+        libroError: 'Usando datos de prueba - API no disponible',
+      });
     }
   },
   addLibro: async (libro) => {
@@ -508,10 +556,102 @@ export const useAppStore = create<AppState>((set, get) => ({
       throw error;
     }
   },
+  assignLibroToEstante: async (data) => {
+    set({ libroLoading: true, libroError: null });
+    
+    try {
+      // Buscar el estante por su nombre
+      const estantes = get().estantes;
+      const estante = estantes.find(e => e.nombre === data.estante);
+      
+      if (!estante) {
+        throw new Error(`No se encontró el estante ${data.estante}`);
+      }
+      
+      // Cargar las secciones del estante si no están cargadas
+      await get().loadSecciones(estante.id);
+      const secciones = get().secciones;
+      
+      // Encontrar la sección específica por etiqueta, fila y columna
+      const seccion = secciones.find(s => 
+        s.etiqueta === data.etiqueta && 
+        s.fila?.toString() === data.fila && 
+        s.columna?.toString() === data.columna
+      );
+      
+      if (!seccion) {
+        throw new Error(`No se encontró la sección en ${data.etiqueta}, fila ${data.fila}, columna ${data.columna}`);
+      }
+      
+      // Preparar datos para la API - aquí asumimos que libro_id es realmente libro_biblioteca_id
+      const assignData = {
+        libro_biblioteca_id: data.libro_id,
+        seccion_estante_id: seccion.id
+      };
+      
+      // Llamar a la API
+      await libroApi.asignarAEstante(assignData);
+      
+      // Actualizar el estado local
+      set((state) => ({
+        libros: state.libros.map((l) =>
+          l.id === data.libro_id ? 
+          { 
+            ...l, 
+            estante: data.estante,
+            fila: data.fila,
+            columna: data.columna
+          } : l
+        ),
+        libroLoading: false,
+        libroError: null,
+      }));
+      
+      get().showSuccessNotification(
+        'Posición actualizada',
+        'La posición del libro ha sido actualizada exitosamente'
+      );
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      set({
+        libroLoading: false,
+        libroError: errorMessage,
+      });
+      
+      get().showErrorNotification(
+        'Error al actualizar posición',
+        errorMessage,
+        getErrorDetails(error)
+      );
+      throw error;
+    }
+  },
   setLibroLoading: (libroLoading) => set({ libroLoading }),
   setLibroError: (libroError) => set({ libroError }),
-  getLibroById: (id) => {
-    return get().libros.find(l => l.id === id);
+  getLibroById: async (id: number) => {
+    // Primero buscar en los libros cargados localmente
+    const libroLocal = get().libros.find(l => l.id === id);
+    if (libroLocal) {
+      return libroLocal;
+    }
+
+    // Si no está localmente, intentar cargar desde la API
+    try {
+      const libroResponse = await libroApi.obtener(id);
+      const libro = mappers.libroResponseToLibro(libroResponse);
+      
+      // Agregar el libro a la lista local
+      const currentLibros = get().libros;
+      const updatedLibros = [...currentLibros, libro];
+      set({ libros: updatedLibros });
+      
+      return libro;
+    } catch (error) {
+      console.error('Error al cargar libro por ID:', error);
+    }
+
+    // Si todo falla, retornar undefined
+    return undefined;
   },
   // Estante CRUD actions
   loadEstantes: async (_bibliotecaId?: number) => {

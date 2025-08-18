@@ -10,17 +10,30 @@ import type {
   BibliotecaResponse 
 } from './businessApiUpdated';
 
+// Tipo temporal para los datos reales que llegan de la API de libros
+type LibroResponseReal = {
+  libro_biblioteca_id: number;
+  nombre: string;
+  autor: string;
+  isbn: string;
+  editorial?: string;
+  descripcion?: string;
+}
+
 // Mappers para Libros
-export const libroResponseToLibro = (apiResponse: LibroResponse): Libro => ({
-  id: apiResponse.id,
+export const libroResponseToLibro = (apiResponse: any): Libro => ({
+  id: apiResponse.libro_biblioteca_id || apiResponse.id, // Usar libro_biblioteca_id como ID principal
   titulo: apiResponse.nombre,
   autor: apiResponse.autor,
-  editorial: '', // Campo que no existe en la API, usar valor por defecto
-  estante: '', // Campo que no existe en la API, usar valor por defecto
+  editorial: apiResponse.editorial || 'Sin especificar', // Usar editorial de la API o valor por defecto
+  estante: '', // Campo que no existe en la API, se debe obtener de la ubicación
   isbn: apiResponse.isbn,
   descripcion: apiResponse.descripcion || '',
-  ubicacion: '', // Campo que no existe en la API, usar valor por defecto
-  estado: 'disponible', // Campo que no existe en la API, usar valor por defecto
+  fechaPublicacion: '', // Campo que no existe en la API
+  ubicacion: '', // Campo que no existe en la API, se debe construir
+  estado: 'Disponible', // Campo que no existe en la API, usar valor por defecto
+  fila: '', // Campo que no existe en la API
+  columna: '', // Campo que no existe en la API
 });
 
 export const libroToApiRequest = (libro: Omit<Libro, 'id'>, bibliotecaId: number) => ({

@@ -4,7 +4,7 @@ import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import AppLayout from './components/AppLayout';
 import ConditionalLayout from './components/ConditionalLayout';
 import NotificationDialog from './components/NotificationDialog';
-import UserDebugInfo from './components/UserDebugInfo';
+
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleProtectedRoute from './components/RoleProtectedRoute';
 import AddUser from './pages/AddUser';
@@ -29,6 +29,7 @@ import AgregarBibliotecario from './pages/AgregarBibliotecario';
 import EditarBibliotecario from './pages/EditarBibliotecario';
 import NuevoLibroISBN from './pages/NuevoLibroISBN';
 import NuevoLibroFormulario from './pages/NuevoLibroFormulario';
+import EditarLibro from './pages/EditarLibro';
 import { useAuthInitialization, useTokenRefresh } from './hooks/useAuth';
 import { useBusinessDataLoader } from './hooks/useBusinessDataLoader';
 import './utils/diagnostic'; // Importar utilidades de diagnóstico
@@ -259,6 +260,16 @@ function App() {
                   </RoleProtectedRoute>
                 </ProtectedRoute>
               } />
+              
+              {/* Libro edit route */}
+              <Route path="/libros/editar/:id" element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute requiredRole={3}>
+                    <EditarLibro />
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              } />
+              
               {/* <Route path="/libros/nuevo/posicion" element={
                 <ProtectedRoute>
                   <RoleProtectedRoute requiredRole={3}>
@@ -299,7 +310,6 @@ function App() {
             onClose={hideNotification}
           />
         </AppLayout>
-        <UserDebugInfo />
       </Router>
     </ThemeProvider>
   );

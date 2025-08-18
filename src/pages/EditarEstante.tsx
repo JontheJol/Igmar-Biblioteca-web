@@ -574,35 +574,6 @@ const EditarEstante: React.FC = () => {
           }}
         />
 
-        {/* Debug de usuario - información temporal */}
-        {currentUser && (
-          <Box
-            sx={{
-              mb: 2,
-              p: 2,
-              bgcolor: '#f5f5f5',
-              borderRadius: 2,
-              border: '1px solid #ddd'
-            }}
-          >
-            <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
-              🔍 Debug - Info del Usuario:
-            </Typography>
-            <Typography variant="body2">
-              <strong>Nombre:</strong> {currentUser.name} | <strong>Email:</strong> {currentUser.email}
-            </Typography>
-            <Typography variant="body2">
-              <strong>Rol ID:</strong> {currentUser.roleId} | <strong>Rol:</strong> {currentUser.roleName}
-            </Typography>
-            <Typography variant="body2" sx={{ 
-              color: currentUser.roleId >= 3 ? 'green' : 'red',
-              fontWeight: 'bold'
-            }}>
-              Estado secciones: {currentUser.roleId >= 3 ? '✅ Permitido (Rol ≥ 3)' : '❌ No permitido (Requiere Rol ≥ 3)'}
-            </Typography>
-          </Box>
-        )}
-
         {/* Slider para alternar entre vista normal y etiquetas */}
         <Box
           sx={{

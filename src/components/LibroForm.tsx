@@ -16,6 +16,7 @@ import { useState, useEffect } from 'react';
 import type { Libro } from '../types';
 import BookIcon from '../assets/bookIcon';
 import { posicionLibroSchema, type PosicionLibroFormData } from '../utils/validation';
+import { useAppStore } from '../store/appStore';
 
 interface LibroFormProps {
   onSubmit: (data: PosicionLibroFormData) => void;
@@ -25,16 +26,6 @@ interface LibroFormProps {
   isEditing?: boolean;
 }
 
-// Datos simulados para los dropdowns
-const estantesOptions = ['A12', 'B15', 'C08', 'D12', 'E05', 'F03', 'G11', 'H07', 'I19'];
-const etiquetasOptions = [
-  { value: 'sin-etiqueta', label: 'Sin etiqueta', filas: ['1', '2', '3', '4', '5'], columnas: ['1', '2', '3', '4', '5', '6'] },
-  { value: 'ficcion', label: 'Ficción', filas: ['1', '2', '3'], columnas: ['1', '2', '3'] },
-  { value: 'historia', label: 'Historia', filas: ['1', '2'], columnas: ['1', '2', '3', '4'] },
-  { value: 'ciencia', label: 'Ciencia', filas: ['1', '2', '3', '4'], columnas: ['1', '2'] },
-  { value: 'literatura', label: 'Literatura', filas: ['1', '2', '3'], columnas: ['1', '2', '3', '4', '5'] },
-];
-
 const LibroForm: React.FC<LibroFormProps> = ({ 
   onSubmit, 
   initialData, 
@@ -43,8 +34,11 @@ const LibroForm: React.FC<LibroFormProps> = ({
   isEditing = false 
 }) => {
   const navigate = useNavigate();
-  const [filasDisponibles, setFilasDisponibles] = useState<string[]>([]);
-  const [columnasDisponibles, setColumnasDisponibles] = useState<string[]>([]);
+  const { estantes, loadEstantes, estanteLoading, obtenerEtiquetasUnicas, loadSecciones, secciones } = useAppStore();
+  const [filasDisponibles, setFilasDisponibles] = useState<string[]>(['1', '2', '3', '4', '5']);
+  const [columnasDisponibles, setColumnasDisponibles] = useState<string[]>(['1', '2', '3', '4', '5', '6']);
+  const [etiquetasDisponibles, setEtiquetasDisponibles] = useState<string[]>(['sin-etiqueta']);
+  const [etiquetasLoading, setEtiquetasLoading] = useState<boolean>(false);
   
   const {
     control,
@@ -55,33 +49,122 @@ const LibroForm: React.FC<LibroFormProps> = ({
   } = useForm<PosicionLibroFormData>({
     resolver: yupResolver(posicionLibroSchema),
     defaultValues: {
-      estante: initialData?.estante || 'A12',
+      estante: '',  // Iniciar vacío para evitar errores de MUI
       etiqueta: 'sin-etiqueta',
       fila: '1',
       columna: '1'
     }
   });
 
+  const estanteSeleccionado = watch('estante');
   const etiquetaSeleccionada = watch('etiqueta');
 
-  // Efecto para actualizar filas y columnas cuando cambia la etiqueta
+  // Cargar estantes al montar el componente
   useEffect(() => {
-    const etiqueta = etiquetasOptions.find(e => e.value === etiquetaSeleccionada);
-    if (etiqueta) {
-      setFilasDisponibles(etiqueta.filas);
-      setColumnasDisponibles(etiqueta.columnas);
-      
-      // Reset fila y columna a los primeros valores disponibles
-      setValue('fila', etiqueta.filas[0]);
-      setValue('columna', etiqueta.columnas[0]);
-    }
-  }, [etiquetaSeleccionada, setValue]);
+    loadEstantes();
+  }, [loadEstantes]);
 
-  // Inicializar con datos por defecto
+  // Establecer valores iniciales cuando los datos estén disponibles
   useEffect(() => {
-    const etiquetaDefault = etiquetasOptions[0]; // Sin etiqueta
-    setFilasDisponibles(etiquetaDefault.filas);
-    setColumnasDisponibles(etiquetaDefault.columnas);
+    // Solo establecer valores si tenemos estantes cargados
+    if (estantes.length > 0) {
+      const currentEstante = watch('estante');
+      if (!currentEstante) {
+        // Si hay datos iniciales y el estante existe en la lista, mantenerlo
+        if (initialData?.estante) {
+          const estanteExiste = estantes.some(e => e.nombre === initialData.estante);
+          if (estanteExiste) {
+            setValue('estante', initialData.estante);
+          } else {
+            // Si el estante inicial no existe en la lista, usar el primero disponible
+            setValue('estante', estantes[0].nombre);
+          }
+        } else {
+          // Si no hay datos iniciales, usar el primer estante
+          setValue('estante', estantes[0].nombre);
+        }
+      }
+    }
+  }, [estantes, setValue, initialData?.estante, watch]);
+
+  // Cargar etiquetas cuando cambie el estante seleccionado
+  useEffect(() => {
+    const cargarEtiquetasYDimensiones = async () => {
+      if (estanteSeleccionado && estantes.length > 0) {
+        setEtiquetasLoading(true);
+        try {
+          const estante = estantes.find(e => e.nombre === estanteSeleccionado);
+          if (estante) {
+            // Cargar etiquetas
+            const etiquetas = await obtenerEtiquetasUnicas(estante.id);
+            const etiquetasConSinEtiqueta = ['sin-etiqueta', ...etiquetas.filter(e => e !== 'sin-etiqueta')];
+            setEtiquetasDisponibles(etiquetasConSinEtiqueta);
+            
+            // Cargar secciones para obtener las dimensiones disponibles
+            await loadSecciones(estante.id);
+            
+          }
+        } catch (error) {
+          console.error('Error al cargar etiquetas:', error);
+          setEtiquetasDisponibles(['sin-etiqueta']);
+          // Usar dimensiones por defecto en caso de error
+          const filasDefault = ['1', '2', '3', '4', '5'];
+          const columnasDefault = ['1', '2', '3', '4', '5', '6'];
+          setFilasDisponibles(filasDefault);
+          setColumnasDisponibles(columnasDefault);
+        } finally {
+          setEtiquetasLoading(false);
+        }
+      } else {
+        // Si no hay estante seleccionado, usar valores por defecto
+        setEtiquetasDisponibles(['sin-etiqueta']);
+        const filasDefault = ['1', '2', '3', '4', '5'];
+        const columnasDefault = ['1', '2', '3', '4', '5', '6'];
+        setFilasDisponibles(filasDefault);
+        setColumnasDisponibles(columnasDefault);
+      }
+    };
+
+    cargarEtiquetasYDimensiones();
+  }, [estanteSeleccionado, estantes, obtenerEtiquetasUnicas, loadSecciones]);
+
+  // Efecto separado para procesar las secciones una vez que se cargan
+  useEffect(() => {
+    if (secciones && secciones.length > 0) {
+      let seccionesFiltradas = secciones;
+      
+      // Si hay una etiqueta seleccionada y no es "sin-etiqueta", filtrar por esa etiqueta
+      if (etiquetaSeleccionada && etiquetaSeleccionada !== 'sin-etiqueta') {
+        seccionesFiltradas = secciones.filter(s => s.etiqueta === etiquetaSeleccionada);
+      }
+      
+      // Determinar filas y columnas disponibles basándose en las secciones filtradas
+      const filasUnicas = [...new Set(seccionesFiltradas.map(s => s.fila?.toString()).filter(Boolean))].sort((a, b) => parseInt(a) - parseInt(b));
+      const columnasUnicas = [...new Set(seccionesFiltradas.map(s => s.columna?.toString()).filter(Boolean))].sort((a, b) => parseInt(a) - parseInt(b));
+      
+      // Usar las dimensiones encontradas o valores por defecto
+      setFilasDisponibles(filasUnicas.length > 0 ? filasUnicas : ['1', '2', '3', '4', '5']);
+      setColumnasDisponibles(columnasUnicas.length > 0 ? columnasUnicas : ['1', '2', '3', '4', '5', '6']);
+      
+      // Reset fila y columna si están fuera del nuevo rango
+      const currentFila = watch('fila');
+      const currentColumna = watch('columna');
+      
+      if (filasUnicas.length > 0 && !filasUnicas.includes(currentFila)) {
+        setValue('fila', filasUnicas[0]);
+      }
+      if (columnasUnicas.length > 0 && !columnasUnicas.includes(currentColumna)) {
+        setValue('columna', columnasUnicas[0]);
+      }
+    }
+  }, [secciones, etiquetaSeleccionada, setValue, watch]);
+
+  // Inicializar con datos por defecto al montar el componente
+  useEffect(() => {
+    const filasDefault = ['1', '2', '3', '4', '5'];
+    const columnasDefault = ['1', '2', '3', '4', '5', '6'];
+    setFilasDisponibles(filasDefault);
+    setColumnasDisponibles(columnasDefault);
   }, []);
 
   const handleFormSubmit = (data: PosicionLibroFormData) => {
@@ -319,11 +402,21 @@ const LibroForm: React.FC<LibroFormProps> = ({
                     }
                   }}
                 >
-                  {estantesOptions.map((estante) => (
-                    <MenuItem key={estante} value={estante}>
-                      {estante}
+                  {estanteLoading ? (
+                    <MenuItem value="" disabled>
+                      Cargando estantes...
                     </MenuItem>
-                  ))}
+                  ) : estantes.length === 0 ? (
+                    <MenuItem value="" disabled>
+                      No hay estantes disponibles
+                    </MenuItem>
+                  ) : (
+                    estantes.map((estante) => (
+                      <MenuItem key={estante.id} value={estante.nombre}>
+                        {estante.nombre}
+                      </MenuItem>
+                    ))
+                  )}
                 </Select>
               </FormControl>
             )}
@@ -372,11 +465,21 @@ const LibroForm: React.FC<LibroFormProps> = ({
                     }
                   }}
                 >
-                  {etiquetasOptions.map((etiqueta) => (
-                    <MenuItem key={etiqueta.value} value={etiqueta.value}>
-                      {etiqueta.label}
+                  {etiquetasLoading ? (
+                    <MenuItem value="" disabled>
+                      Cargando etiquetas...
                     </MenuItem>
-                  ))}
+                  ) : etiquetasDisponibles.length === 0 ? (
+                    <MenuItem value="sin-etiqueta">
+                      Sin etiqueta
+                    </MenuItem>
+                  ) : (
+                    etiquetasDisponibles.map((etiqueta) => (
+                      <MenuItem key={etiqueta} value={etiqueta}>
+                        {etiqueta === 'sin-etiqueta' ? 'Sin etiqueta' : etiqueta}
+                      </MenuItem>
+                    ))
+                  )}
                 </Select>
               </FormControl>
             )}
@@ -545,7 +648,7 @@ const LibroForm: React.FC<LibroFormProps> = ({
           >
             {isSubmitting || loading 
               ? (isEditing ? 'Actualizando...' : 'Guardando...') 
-              : (isEditing ? 'Agregar Libro' : 'Guardar libro')
+              : (isEditing ? 'Guardar' : 'Guardar libro')
             }
           </Button>
         </Box>

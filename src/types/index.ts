@@ -47,6 +47,7 @@ export interface Libro {
   autor: string;
   editorial: string;
   estante: string;
+  etiqueta?: string;
   isbn?: string;
   fechaPublicacion?: string;
   estado?: string;
@@ -75,6 +76,8 @@ export interface Estante {
   cantidadLibros: number;
   espaciosDisponibles: number;
   etiquetas?: string[];
+  cantFilas?: number;
+  cantColumnas?: number;
 }
 
 export interface SeccionFormData {

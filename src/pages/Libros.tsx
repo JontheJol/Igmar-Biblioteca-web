@@ -12,7 +12,7 @@ import {
   TextField
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/appStore';
 import BookIcon from '../assets/bookIcon';
@@ -24,9 +24,14 @@ import AddIcon from '../assets/addIcon';
 
 const Libros: React.FC = () => {
   const navigate = useNavigate();
-  const { libros } = useAppStore();
+  const { libros, loadLibros } = useAppStore();
   const [filtro, setFiltro] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('titulo');
+
+  // Cargar libros al montar el componente
+  useEffect(() => {
+    loadLibros();
+  }, [loadLibros]);
 
   const handleFiltroChange = (event: SelectChangeEvent) => {
     setFiltroTipo(event.target.value);
